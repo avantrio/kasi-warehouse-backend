@@ -33,3 +33,5 @@ To learn the software, we recommend the <a href="https://www.odoo.com/slides">Od
 
 
 run command - ./odoo-bin --addons-path="addons/,custom/" -d kasi-two(database name can be any)
+
+POSTMAN COLLECTION : https://api.postman.com/collections/8513743-42b433a3-171b-4dca-8cda-f7d922605fd9?access_key=PMAT-01H1X7P5M6P7PTWH1XKXYV1VC1
