@@ -2,12 +2,15 @@ from odoo import http
 from werkzeug.exceptions import NotFound
 from math import ceil
 
+from .services import validate_request
+
 class ProductTemplateController(http.Controller):
 
+    cros = '*'
     fields = ['price','price_extra','lst_price','partner_ref','active','product_tmpl_id','product_template_attribute_value_ids','is_product_variant','standard_price','pricelist_item_count',
               'image_128','__last_update','display_name','create_uid','create_date','write_date','qty_available','virtual_available','free_qty','incoming_qty','outgoing_qty','base_unit_price',
               'is_published','name','description','type','detailed_type','categ_id','currency_id','list_price','product_variant_ids','product_variant_id','product_variant_count','alternative_product_ids',
-              ]
+              'product_template_image_ids']
 
     def filter_products_based_on_color(self,product,html_colors):
         for product_attribute_value in product.get('product_attribute_values'):
@@ -35,8 +38,9 @@ class ProductTemplateController(http.Controller):
             result['offset'] = offset
             return result
 
-    @http.route('/api/products',auth='public',type='json')
+    @http.route('/api/products',auth='public',type='json',methods=['POST'],cros=cros)
     def get_products(self, **kwargs):
+        validate_request()
         filter_set = []
         response = {}
         if 'order_by' not in kwargs:
@@ -82,7 +86,6 @@ class ProductTemplateController(http.Controller):
             pricelist_items =  http.request.env['product.pricelist.item'].sudo().search_read([('product_id','=',product.get('id'))])
             product['pricelist_items'] = pricelist_items
 
-
         if 'html_colors' in kwargs:
             products[:] = (product for product in products if self.filter_products_based_on_color(product,kwargs.get('html_colors')))
         
@@ -95,8 +98,9 @@ class ProductTemplateController(http.Controller):
         response['message'] = 'success'
         return response
     
-    @http.route('/api/products/<int:product_id>/',auth='public',type='json')
+    @http.route('/api/products/<int:product_id>/',auth='public',type='json',methods=['POST'],cros=cros)
     def get_product(self,product_id,**kwargs):
+        validate_request()
         products = http.request.env['product.product'].sudo().search_read([('id', '=', product_id)],fields=self.fields)
         
         for product in products:
@@ -107,15 +111,18 @@ class ProductTemplateController(http.Controller):
             pricelist_items =  http.request.env['product.pricelist.item'].sudo().search_read([('product_id','=',product.get('id'))])
             product['pricelist_items'] = pricelist_items
 
+            product_template_images  = http.request.env['product.image'].sudo().search_read([('id','in',product.get('product_template_image_ids'))])
+            product['extra_product_media'] = product_template_images
+
         if not products:
             raise NotFound('Not found')
         else:
             response = {'status':200,'response':products,'message':"success"}
             return response
     
-    @http.route('/api/products/<int:product_id>/alternative-products',auth='public',type='json')
+    @http.route('/api/products/<int:product_id>/alternative-products',auth='public',type='json',methods=['POST'],cros=cros)
     def get_alternative_products(self,product_id,**kwargs):
-
+        validate_request()
         product = http.request.env['product.product'].sudo().search_read([('id', '=', product_id)])
         if product:
             alternativeproducts = http.request.env['product.product'].sudo().search_read([('is_published','=',True),('id','in',product[0].get('alternative_product_ids'))],order ='id asc')
@@ -124,8 +131,9 @@ class ProductTemplateController(http.Controller):
         else:
             raise NotFound('Not found')
 
-    @http.route('/api/product-colors',auth='public',type='json')
+    @http.route('/api/product-colors',auth='public',type='json',methods=['POST'],cros=cros)
     def get_product_colors(self,**kwargs):
+        validate_request()
         product_attributes = http.request.env['product.attribute'].sudo().search_read([('display_type','=','color'),('display_name','=','Color')],fields=['value_ids'])
         if len(product_attributes) == 1:
             if product_attributes[0].get('value_ids') is not None:
