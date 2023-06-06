@@ -38,7 +38,7 @@ class ProductTemplateController(http.Controller):
             result['offset'] = offset
             return result
 
-    @http.route('/api/products',auth='public',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/products',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_products(self, **kwargs):
         validate_request()
         filter_set = []
@@ -98,7 +98,7 @@ class ProductTemplateController(http.Controller):
         response['message'] = 'success'
         return response
     
-    @http.route('/api/products/<int:product_id>/',auth='public',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/products/<int:product_id>/',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_product(self,product_id,**kwargs):
         validate_request()
         products = http.request.env['product.product'].sudo().search_read([('id', '=', product_id)],fields=self.fields)
@@ -120,7 +120,7 @@ class ProductTemplateController(http.Controller):
             response = {'status':200,'response':products,'message':"success"}
             return response
     
-    @http.route('/api/products/<int:product_id>/alternative-products',auth='public',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/products/<int:product_id>/alternative-products',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_alternative_products(self,product_id,**kwargs):
         validate_request()
         product = http.request.env['product.product'].sudo().search_read([('id', '=', product_id)])
@@ -131,7 +131,7 @@ class ProductTemplateController(http.Controller):
         else:
             raise NotFound('Not found')
 
-    @http.route('/api/product-colors',auth='public',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/product-colors',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_product_colors(self,**kwargs):
         validate_request()
         product_attributes = http.request.env['product.attribute'].sudo().search_read([('display_type','=','color'),('display_name','=','Color')],fields=['value_ids'])
