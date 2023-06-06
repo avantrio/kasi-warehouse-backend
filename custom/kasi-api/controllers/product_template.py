@@ -31,7 +31,7 @@ class ProductTemplateController(http.Controller):
             result['offset'] = offset
             return result
         
-    @http.route('/api/product-templates',auth='public',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/product-templates',auth='public',type='json',methods=['POST','OPTIONS'],cors="*")
     def get_product_templates(self, **kwargs):
         validate_request()
         response = {}
@@ -73,7 +73,7 @@ class ProductTemplateController(http.Controller):
         response['message'] = 'success'
         return response
     
-    @http.route('/api/product-templates/<int:product_template_id>/',auth='public',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/product-templates/<int:product_template_id>/',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_product_template(self,product_template_id,**kwargs):
         validate_request()
         product_tempalte = http.request.env['product.template'].sudo().search_read([('id', '=', product_template_id)])
@@ -81,7 +81,7 @@ class ProductTemplateController(http.Controller):
         return response
     
 
-    @http.route('/api/product-templates/<int:product_template_id>/products/',auth='public',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/product-templates/<int:product_template_id>/products/',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_product_template_variants(self,product_template_id,**kwargs):
         validate_request()
         product_tempalte = http.request.env['product.template'].sudo().search_read([('id', '=', product_template_id)],fields=['product_variant_ids'])                          
@@ -104,7 +104,7 @@ class ProductTemplateController(http.Controller):
         return response
     
 
-    @http.route('/api/product-templates/<int:product_template_id>/products/<int:product_id>',auth='public',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/product-templates/<int:product_template_id>/products/<int:product_id>',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_product_template_variant(self,product_template_id,product_id,**kwargs):
         validate_request()
         products = http.request.env['product.product'].sudo().search_read([('id', '=', product_id)],fields=self.product_fields)
@@ -126,7 +126,7 @@ class ProductTemplateController(http.Controller):
             response = {'status':200,'response':products,'message':"success"}
             return response
     
-    @http.route('/api/product-templates/<int:product_template_id>/products/<int:product_id>/alternative-products',auth='public',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/product-templates/<int:product_template_id>/products/<int:product_id>/alternative-products',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_alternative_products(self,product_template_id, product_id,**kwargs):
         validate_request()
         product = http.request.env['product.product'].sudo().search_read([('id', '=', product_id)])
@@ -147,7 +147,7 @@ class ProductTemplateController(http.Controller):
         response = {'status':200,'response':products,'message':"success"}
         return response
     
-    @http.route('/api/pricelists',auth='public',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/pricelists',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_pricelists(self,**kwargs):
         validate_request()
         pricelists = http.request.env['product.pricelist'].sudo().search_read([],order ='id desc')
@@ -155,7 +155,7 @@ class ProductTemplateController(http.Controller):
         response = {'status':200,'response':pricelists,'message':"success"}
         return response
     
-    @http.route('/api/pricelists/<int:pricelist_id>/products/<int:product_id>',auth='public',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/pricelists/<int:pricelist_id>/products/<int:product_id>',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_pricelist_products(self,pricelist_id,product_id,**kwargs):
         validate_request()
         pricelists = http.request.env['product.pricelist'].sudo().search_read([('id','=',pricelist_id)],fields=['item_ids'])

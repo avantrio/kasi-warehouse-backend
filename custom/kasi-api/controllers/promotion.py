@@ -5,7 +5,7 @@ class PromotionController(http.Controller):
 
     cors = "*"
     
-    @http.route('/api/promotions',auth='public',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/promotions',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_promotions(self, **kwargs):
         validate_request()
         if 'program_type' in kwargs:
@@ -15,7 +15,7 @@ class PromotionController(http.Controller):
         response = {'status':200,'response':promotions,'message':"success"}
         return response
      
-    @http.route('/api/promotions/<int:id>/',auth='public',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/promotions/<int:id>/',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_promotion(self,id,**kwargs):
         validate_request()
         promotion = http.request.env['coupon.program'].sudo().search_read([('id', '=', id)])
