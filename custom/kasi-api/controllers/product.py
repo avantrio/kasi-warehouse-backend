@@ -40,7 +40,7 @@ class ProductTemplateController(http.Controller):
 
     @http.route('/api/products',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_products(self, **kwargs):
-        validate_request()
+        validate_request(kwargs)
         filter_set = []
         response = {}
         if 'order_by' not in kwargs:
@@ -100,7 +100,7 @@ class ProductTemplateController(http.Controller):
     
     @http.route('/api/products/<int:product_id>/',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_product(self,product_id,**kwargs):
-        validate_request()
+        validate_request(kwargs)
         products = http.request.env['product.product'].sudo().search_read([('id', '=', product_id)],fields=self.fields)
         
         for product in products:
@@ -122,7 +122,7 @@ class ProductTemplateController(http.Controller):
     
     @http.route('/api/products/<int:product_id>/alternative-products',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_alternative_products(self,product_id,**kwargs):
-        validate_request()
+        validate_request(kwargs)
         product = http.request.env['product.product'].sudo().search_read([('id', '=', product_id)])
         if product:
             alternativeproducts = http.request.env['product.product'].sudo().search_read([('is_published','=',True),('id','in',product[0].get('alternative_product_ids'))],order ='id asc')
@@ -133,7 +133,7 @@ class ProductTemplateController(http.Controller):
 
     @http.route('/api/product-colors',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_product_colors(self,**kwargs):
-        validate_request()
+        validate_request(kwargs)
         product_attributes = http.request.env['product.attribute'].sudo().search_read([('display_type','=','color'),('display_name','=','Color')],fields=['value_ids'])
         if len(product_attributes) == 1:
             if product_attributes[0].get('value_ids') is not None:
