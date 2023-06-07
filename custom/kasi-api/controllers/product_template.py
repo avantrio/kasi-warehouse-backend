@@ -125,7 +125,8 @@ class ProductTemplateController(http.Controller):
         else:
             response = {'status':200,'response':products,'message':"success"}
             return response
-    
+        
+    #TODO logic changes for alternative products
     @http.route('/api/product-templates/<int:product_template_id>/products/<int:product_id>/alternative-products',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_alternative_products(self,product_template_id, product_id,**kwargs):
         validate_request(kwargs)

@@ -123,10 +123,15 @@ class ProductTemplateController(http.Controller):
     @http.route('/api/products/<int:product_id>/alternative-products',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_alternative_products(self,product_id,**kwargs):
         validate_request(kwargs)
+        alternative_products_list = []
         product = http.request.env['product.product'].sudo().search_read([('id', '=', product_id)])
         if product:
-            alternativeproducts = http.request.env['product.product'].sudo().search_read([('is_published','=',True),('id','in',product[0].get('alternative_product_ids'))],order ='id asc')
-            response = {'status':200,'response':alternativeproducts,'message':"success"}
+            alternative_product_templates = http.request.env['product.template'].sudo().search_read([('is_published','=',True),('id','in',product[0].get('alternative_product_ids'))],order ='id asc',fields=['product_variant_ids'])
+            for alternative_product_template in alternative_product_templates:
+                alternative_products = http.request.env['product.product'].sudo().search_read([('is_published','=',True),('id','in',alternative_product_template.get('product_variant_ids'))],order ='id asc',fields=self.fields)
+                for alternative_product in alternative_products:
+                    alternative_products_list.append(alternative_product)
+            response = {'status':200,'response':alternative_products_list,'message':"success"}
             return response
         else:
             raise NotFound('Not found')
