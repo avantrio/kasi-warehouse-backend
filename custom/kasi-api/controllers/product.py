@@ -48,8 +48,8 @@ class ProductTemplateController(http.Controller):
         else:
             order_by = kwargs.get('order_by')
 
-        if 'category_id' in kwargs:
-            filter_set.append(('categ_id','=',kwargs.get('category_id')))
+        if 'category_ids' in kwargs:
+            filter_set.append(('categ_id','in',kwargs.get('category_ids')))
         if 'list_price_gte' in kwargs:
             filter_set.append(('list_price','>=',kwargs.get('list_price_gte')))
         if 'list_price_lte' in kwargs:

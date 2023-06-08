@@ -32,5 +32,7 @@ from the documentation.
 To learn the software, we recommend the <a href="https://www.odoo.com/slides">Odoo eLearning</a>, or <a href="https://www.odoo.com/page/scale-up-business-game">Scale-up</a>, the <a href="https://www.odoo.com/page/scale-up-business-game">business game</a>. Developers can start with <a href="https://www.odoo.com/documentation/15.0/developer/howtos.html">the developer tutorials</a>
 
 
-run command - ./odoo-bin --addons-path="addons/,custom/" -d kasi-two(database name can be any)
+run command - 
+linux: ./odoo-bin --addons-path="addons/,custom/" -d kasi-two(database name can be any)
+windows: python odoo-bin -r odoo(database user) -w odoo(database user password) --addons-path="addons/,custom/" -d mydb
 
