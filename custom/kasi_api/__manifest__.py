@@ -6,5 +6,4 @@
     'summary': 'Kasi warehouse REST API',
     'description': "Kasi warehouse REST API",
     'website': 'https://www.odoo.com/'
-
 }
