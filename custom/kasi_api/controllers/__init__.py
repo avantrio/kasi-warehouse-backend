@@ -1,1 +1,1 @@
-from .import product,promotion,category,product_template,auth, business, country,order
+from .import product,promotion,category,product_template,auth, business, country, profile,order
