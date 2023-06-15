@@ -1,1 +1,0 @@
-from .import product,promotion,category,product_template
