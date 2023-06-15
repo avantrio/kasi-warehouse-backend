@@ -1,1 +1,1 @@
-from .import product,promotion,category,product_template
+from .import product,promotion,category,product_template,order
