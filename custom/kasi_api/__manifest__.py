@@ -1,5 +1,5 @@
 {
-    'name': 'kasi-rest-api',
+    'name': 'kasi_rest_api',
     'version': '1.0',
     'category': 'REST API',
     'sequence': 15,

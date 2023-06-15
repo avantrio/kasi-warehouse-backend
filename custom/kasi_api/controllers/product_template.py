@@ -33,7 +33,7 @@ class ProductTemplateController(http.Controller):
         
     @http.route('/api/product-templates',auth='public',type='json',methods=['POST','OPTIONS'],cors="*")
     def get_product_templates(self, **kwargs):
-        validate_request()
+        validate_request(kwargs)
         response = {}
         filter_set = []
         if 'order_by' not in kwargs:
@@ -41,8 +41,8 @@ class ProductTemplateController(http.Controller):
         else:
             order_by = kwargs.get('order_by')
 
-        if 'category_id' in kwargs:
-            filter_set.append(('categ_id','=',kwargs.get('category_id')))
+        if 'category_ids' in kwargs:
+            filter_set.append(('categ_id','in',kwargs.get('category_ids')))
         if 'list_price_gte' in kwargs:
             filter_set.append(('list_price','>=',kwargs.get('list_price_gte')))
         if 'list_price_lte' in kwargs:
@@ -75,7 +75,7 @@ class ProductTemplateController(http.Controller):
     
     @http.route('/api/product-templates/<int:product_template_id>/',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_product_template(self,product_template_id,**kwargs):
-        validate_request()
+        validate_request(kwargs)
         product_tempalte = http.request.env['product.template'].sudo().search_read([('id', '=', product_template_id)])
         response = {'status':200,'response':product_tempalte,'message':"success"}
         return response
@@ -83,7 +83,7 @@ class ProductTemplateController(http.Controller):
 
     @http.route('/api/product-templates/<int:product_template_id>/products/',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_product_template_variants(self,product_template_id,**kwargs):
-        validate_request()
+        validate_request(kwargs)
         product_tempalte = http.request.env['product.template'].sudo().search_read([('id', '=', product_template_id)],fields=['product_variant_ids'])                          
         products = http.request.env['product.product'].sudo().search_read([('id', 'in', product_tempalte[0].get('product_variant_ids')),('is_published','=',True)],fields=self.product_fields)
 
@@ -106,7 +106,7 @@ class ProductTemplateController(http.Controller):
 
     @http.route('/api/product-templates/<int:product_template_id>/products/<int:product_id>',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_product_template_variant(self,product_template_id,product_id,**kwargs):
-        validate_request()
+        validate_request(kwargs)
         products = http.request.env['product.product'].sudo().search_read([('id', '=', product_id)],fields=self.product_fields)
 
         for product in products:
@@ -125,10 +125,11 @@ class ProductTemplateController(http.Controller):
         else:
             response = {'status':200,'response':products,'message':"success"}
             return response
-    
+        
+    #TODO logic changes for alternative products
     @http.route('/api/product-templates/<int:product_template_id>/products/<int:product_id>/alternative-products',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_alternative_products(self,product_template_id, product_id,**kwargs):
-        validate_request()
+        validate_request(kwargs)
         product = http.request.env['product.product'].sudo().search_read([('id', '=', product_id)])
         alternative_product_ids = product[0].get('alternative_product_ids')
         products = http.request.env['product.product'].sudo().search_read([('is_published','=',True),('id','in',alternative_product_ids)],order ='id asc',fields=self.product_fields)
@@ -149,7 +150,7 @@ class ProductTemplateController(http.Controller):
     
     @http.route('/api/pricelists',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_pricelists(self,**kwargs):
-        validate_request()
+        validate_request(kwargs)
         pricelists = http.request.env['product.pricelist'].sudo().search_read([],order ='id desc')
         
         response = {'status':200,'response':pricelists,'message':"success"}
@@ -157,7 +158,7 @@ class ProductTemplateController(http.Controller):
     
     @http.route('/api/pricelists/<int:pricelist_id>/products/<int:product_id>',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_pricelist_products(self,pricelist_id,product_id,**kwargs):
-        validate_request()
+        validate_request(kwargs)
         pricelists = http.request.env['product.pricelist'].sudo().search_read([('id','=',pricelist_id)],fields=['item_ids'])
         pricelist_items =  http.request.env['product.pricelist.item'].sudo().search_read([('id','in',pricelists[0].get('item_ids'))])
         for pricelist_item in pricelist_items:

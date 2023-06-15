@@ -7,6 +7,6 @@ class UserController(Controller):
         
     @route('/api/users/<int:id>/',auth='user',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_states(self, id,**kwargs):
-        validate_request()
+        validate_request(kwargs)
         townships = request.env['res.country.state'].sudo().search_read([("country_id","=?",id)])
         return townships
