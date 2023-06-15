@@ -7,6 +7,7 @@ from odoo.exceptions import UserError
 from odoo.addons.auth_signup.models.res_users import SignupError
 from odoo.exceptions import UserError
 from odoo.addons.web.controllers.main import ensure_db, Home
+from .services import validate_request
 
 import phonenumbers
 from phonenumbers import carrier
@@ -19,11 +20,11 @@ from datetime import timedelta, datetime
 _logger = logging.getLogger(__name__)
 
 
-SIGN_UP_REQUEST_PARAMS = {'login', 'password', 'confirm_password','first_name', 'last_name', 'email','company_name', 'business_type', 'company_registry', 'vat', 'address', 'location'}
+SIGN_UP_REQUEST_PARAMS = {'login', 'password', 'confirm_password','first_name', 'last_name', 'name','email','company_name', 'business_type', 'company_registry', 'vat', 'address', 'location'}
 
 class AuthController(Controller):
     cors = '*'
-    @route('/api/session/authenticate', type='json', auth="none", methods=['POST','OPTIONS'], cors=cors)
+    @route('/api/session/authenticate/', type='json', auth="none", methods=['POST','OPTIONS'], cors=cors)
     def authenticate(self, login, password, base_location=None):
         try:
             db = ensure_db()
@@ -36,8 +37,8 @@ class AuthController(Controller):
         return response
 
 
-    @route('/api/register', type='json', auth="public", methods=['POST','OPTIONS'], cors=cors, website=True, sitemap=False)
-    def register(self, *args, **kw):
+    @route('/api/register/', type='json', auth="public", methods=['POST','OPTIONS'], cors=cors, website=True, sitemap=False)
+    def register(self, *args, **kwargs):
         qcontext = self.get_auth_signup_qcontext()
         if 'error' not in qcontext and request.httprequest.method == 'POST':
             try:
@@ -66,7 +67,7 @@ class AuthController(Controller):
         return response
 
     @route('/api/otp/', type='json', auth="public", methods=['POST','OPTIONS'], cors=cors)
-    def send_token(self, mobile,*args, **kw):
+    def send_token(self, mobile,*args, **kwargs):
         try: 
             token = self._generate_token(4)
             request.env['mobile.verification'].sudo().create({
@@ -81,7 +82,7 @@ class AuthController(Controller):
         return response
     
     @route('/api/otp/', type='json', auth="public", methods=['PUT','OPTIONS'], cors=cors)
-    def verify_token(self,mobile,token,*args, **kw):
+    def verify_token(self,mobile,token,*args, **kwargs):
         try:
             verification_obj = request.env['mobile.verification'].sudo().search([('mobile_number', '=', mobile),('created_date','!=', False)],order='created_date desc', limit=1)
             if token=="0000" or token==verification_obj.token:
@@ -101,13 +102,6 @@ class AuthController(Controller):
             response = {'status':400,'response':{"error": _(e)},'message':"validation error"}
         return response
 
-    @route('/api/me', type='json', auth="public", methods=['POST','OPTIONS'], cors=cors)
-    def me(self,*args, **kw):
-        session_info = request.env['ir.http'].session_info()
-        user = request.env['res.users'].sudo().search([('id', '=', session_info['uid'])])
-        response = {'status':200,'response': user.read(),'message':"success"}
-        return response
-
     def get_auth_signup_qcontext(self):
         """ Shared helper returning the rendering context for signup and reset password """
         qcontext = {k: v for (k, v) in request.params.items() if k in SIGN_UP_REQUEST_PARAMS}
@@ -124,9 +118,6 @@ class AuthController(Controller):
                 qcontext['error'] = _("Invalid signup token")
                 qcontext['invalid_token'] = True
 
-        verification_obj = request.env['mobile.verification'].sudo().search([('mobile_number', '=', qcontext.get('login')),('mobile_verified','=', True)], limit=1)
-        if not verification_obj:
-            qcontext['error'] = _("Mobile number not verified")
         return qcontext
 
     def get_auth_signup_config(self):
@@ -166,12 +157,12 @@ class AuthController(Controller):
             elif key in ('address', 'location'):
                 if key=='address':
                     address = qcontext.get(key)
-                    values['partner'].update({ key: address.get(key) for key in ('street', 'city', 'zip') })
+                    values['partner'].update({ key: address.get(key) for key in ('street', 'city', 'province','zip', 'landmark', 'township') })
                 else:
                     location = qcontext.get(key)
                     values['partner']['partner_latitude'] = location["lat"]
                     values['partner']['partner_longitude'] = location["long"]
-
+        if qcontext.get('first_name') or qcontext.get('last_name'): 
             values['user']['name'] = self._get_name(qcontext.get('first_name'), qcontext.get('last_name'))
 
         if not values and (('login', 'password', 'company_name') not in values or ('location' or 'address') not in values):
@@ -180,7 +171,12 @@ class AuthController(Controller):
             raise UserError(_("Passwords do not match; please retype them."))
         if values['user'].get('login') and not self._verify_mobile_number(values['user'].get('login')):
             raise UserError(_("Mobile number is wrong; please retry."))
-        
+
+        if qcontext.get('login'):
+            verification_obj = request.env['mobile.verification'].sudo().search([('mobile_number', '=', qcontext.get('login')),('mobile_verified','=', True)], limit=1)
+            if not verification_obj:
+                raise UserError(_("Mobile number not verified"))
+            
         return values
 
     def _signup_with_values(self, token, values):
