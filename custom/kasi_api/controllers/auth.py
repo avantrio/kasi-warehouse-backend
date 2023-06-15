@@ -7,6 +7,7 @@ from odoo.exceptions import UserError
 from odoo.addons.auth_signup.models.res_users import SignupError
 from odoo.exceptions import UserError
 from odoo.addons.web.controllers.main import ensure_db, Home
+from .services import validate_request
 
 import phonenumbers
 from phonenumbers import carrier
@@ -103,6 +104,7 @@ class AuthController(Controller):
 
     @route('/api/me', type='json', auth="public", methods=['POST','OPTIONS'], cors=cors)
     def me(self,*args, **kw):
+        validate_request(kwargs)
         session_info = request.env['ir.http'].session_info()
         user = request.env['res.users'].sudo().search([('id', '=', session_info['uid'])])
         response = {'status':200,'response': user.read(),'message':"success"}
