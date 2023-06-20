@@ -1,9 +1,12 @@
 import logging
 
 from odoo.http import route, request, Controller
-from .services import validate_request
+from .services import validate_request, verify_mobile_number
 from .auth import SIGN_UP_REQUEST_PARAMS, AuthController
 from odoo import _
+from odoo.addons.auth_signup.models.res_users import SignupError
+from odoo.exceptions import UserError
+from odoo.addons.web.controllers.main import ensure_db
 
 _logger = logging.getLogger(__name__)
 
@@ -39,6 +42,77 @@ class ProfileController(Controller):
             response = {'status':400,'response':{"error": qcontext['error']},'message':"validation error"}
         return response
 
+    @route('/api/profile/me/login/',auth='user',type='json',methods=['PUT','OPTIONS'],cors=cors)
+    def update_login(self,**kwargs):
+        qcontext = AuthController().get_auth_signup_qcontext()
+
+        if 'error' not in qcontext and request.httprequest.method == 'PUT':
+            try: 
+                session_info = request.env['ir.http'].session_info()
+                user = request.env['res.users'].sudo().search([('id', '=', session_info['uid'])])
+                values = self._prepare_login_update_values(qcontext)
+                self._update_obj(values, user)
+                request.env.cr.commit() 
+                db = ensure_db()    # as authenticate will use its own cursor we need to commit the current transaction
+                self._auth_user(db, values['login'], values['password'])
+            except UserError as e:
+                qcontext['error'] = e.args[0]
+                request.env.cr.rollback()
+            except (SignupError, AssertionError) as e:
+                if request.env["res.users"].sudo().search([("login", "=", qcontext.get("login"))]):
+                    qcontext["error"] = _("Another user is already registered using this mobile number.")
+                else:
+                    _logger.error("%s", e)
+                    qcontext['error'] = _("Could not create a new account.")
+                request.env.cr.rollback()
+            except Exception as e:
+                _logger.error("%s", e)
+                qcontext['error'] = _(e)
+                request.env.cr.rollback()
+        
+
+        if 'error' not in qcontext:
+            response = {'status':200,'response':user.read(),'message':"success"}
+        else:
+            response = {'status':400,'response':{"error": qcontext['error']},'message':"validation error"}
+        return response
+
+    @route('/api/profile/me/password/',auth='user',type='json',methods=['PUT','OPTIONS'],cors=cors)
+    def update_password(self,**kwargs):
+        qcontext = AuthController().get_auth_signup_qcontext()
+
+        if 'error' not in qcontext and request.httprequest.method == 'PUT':
+            try: 
+                session_info = request.env['ir.http'].session_info()
+                user = request.env['res.users'].sudo().search([('id', '=', session_info['uid'])])
+                db = ensure_db()
+                self._auth_user(db, user.login, qcontext['password'])
+                values = self._prepare_password_update_values(qcontext)
+                self._update_obj(values, user)
+                request.env.cr.commit()     # as authenticate will use its own cursor we need to commit the current transaction
+                self._auth_user(db, user.login, qcontext['new_password'])
+            except UserError as e:
+                qcontext['error'] = e.args[0]
+                request.env.cr.rollback()
+            except (SignupError, AssertionError) as e:
+                if request.env["res.users"].sudo().search([("login", "=", qcontext.get("login"))]):
+                    qcontext["error"] = _("Another user is already registered using this mobile number.")
+                else:
+                    _logger.error("%s", e)
+                    qcontext['error'] = _("Could not create a new account.")
+                request.env.cr.rollback()
+            except Exception as e:
+                _logger.error("%s", e)
+                qcontext['error'] = _(e)
+                request.env.cr.rollback()
+        
+
+        if 'error' not in qcontext:
+            response = {'status':200,'response':user.read(),'message':"success"}
+        else:
+            response = {'status':400,'response':{"error": qcontext['error']},'message':"validation error"}
+        return response
+
     def _prepare_profile_update_values(self, qcontext):
         values = {
             "user": {},
@@ -64,6 +138,30 @@ class ProfileController(Controller):
 
         return values
 
+    def _prepare_login_update_values(self, qcontext):
+        values={}
+        values['login'] = qcontext.get('login')
+        values['password'] = qcontext.get('password')
+        if not values and ('login', 'password') not in values:
+            raise UserError(_("The form was not properly filled in."))
+        if values.get('login') and not verify_mobile_number(values.get('login')):
+            raise UserError(_("Mobile number is wrong; please retry."))
+
+        if qcontext.get('login'):
+            verification_obj = request.env['mobile.verification'].sudo().search([('mobile_number', '=', qcontext.get('login')),('mobile_verified','=', True)], limit=1)
+            if not verification_obj:
+                raise UserError(_("Mobile number not verified"))
+        return values
+
+    def _prepare_password_update_values(self, qcontext):
+        values={}
+        values['password'] = qcontext.get('new_password')
+        if not values and ('password') not in values:
+            raise UserError(_("The form was not properly filled in."))
+        if values.get('password') != qcontext.get('confirm_password'):
+            raise UserError(_("Passwords do not match; please retype them."))
+        return values
+
     def _update_profile(self, values):
         session_info = request.env['ir.http'].session_info()
         user = request.env['res.users'].sudo().search([('id', '=', session_info['uid'])])
@@ -77,6 +175,12 @@ class ProfileController(Controller):
     
     def _update_obj(self, values, obj):
         obj.write(values)
+
+    def _auth_user(self, db, login, password):
+        uid = request.session.authenticate(db, login, password)
+        if not uid:
+            raise SignupError(_('Authentication Failed.'))
+        return uid
 
     
         
