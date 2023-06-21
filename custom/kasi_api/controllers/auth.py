@@ -66,6 +66,8 @@ class AuthController(Controller):
     @route('/api/otp/', type='json', auth="public", methods=['POST','OPTIONS'], cors=cors)
     def send_token(self, mobile,*args, **kwargs):
         try: 
+            if not verify_mobile_number(mobile):
+                raise UserError(_("Mobile number is wrong; please retry."))
             token = self._generate_token(4)
             request.env['mobile.verification'].sudo().create({
                 'token': token,
