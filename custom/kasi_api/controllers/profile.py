@@ -15,7 +15,7 @@ class ProfileController(Controller):
 
     cors = "*"
 
-    @route('/api/profile/me/', type='json', auth="public", methods=['POST','OPTIONS'], cors=cors)
+    @route('/api/profile/me/', type='json', auth="user", methods=['POST','OPTIONS'], cors=cors)
     def me(self,*args, **kwargs):
         validate_request(kwargs)
         session_info = request.env['ir.http'].session_info()
