@@ -7,11 +7,8 @@ from odoo.exceptions import UserError
 from odoo.addons.auth_signup.models.res_users import SignupError
 from odoo.exceptions import UserError
 from odoo.addons.web.controllers.main import ensure_db, Home
-from .services import validate_request
+from .services import validate_request, verify_mobile_number
 
-import phonenumbers
-from phonenumbers import carrier
-from phonenumbers.phonenumberutil import number_type
 from base64 import b32encode
 from random import randint
 from datetime import timedelta, datetime
@@ -20,7 +17,7 @@ from datetime import timedelta, datetime
 _logger = logging.getLogger(__name__)
 
 
-SIGN_UP_REQUEST_PARAMS = {'login', 'password', 'confirm_password','first_name', 'last_name', 'name','email','company_name', 'business_type', 'company_registry', 'vat', 'address', 'location'}
+SIGN_UP_REQUEST_PARAMS = {'login', 'password', 'confirm_password', 'new_password','first_name', 'last_name', 'name','email','company_name', 'business_type', 'company_registry', 'vat', 'address', 'location'}
 
 class AuthController(Controller):
     cors = '*'
@@ -49,7 +46,7 @@ class AuthController(Controller):
                 request.env.cr.rollback()
             except (SignupError, AssertionError) as e:
                 if request.env["res.users"].sudo().search([("login", "=", qcontext.get("login"))]):
-                    qcontext["error"] = _("Another user is already registered using this email address.")
+                    qcontext["error"] = _("Another user is already registered using this mobile number.")
                 else:
                     _logger.error("%s", e)
                     qcontext['error'] = _("Could not create a new account.")
@@ -69,6 +66,8 @@ class AuthController(Controller):
     @route('/api/otp/', type='json', auth="public", methods=['POST','OPTIONS'], cors=cors)
     def send_token(self, mobile,*args, **kwargs):
         try: 
+            if not verify_mobile_number(mobile):
+                raise UserError(_("Mobile number is wrong; please retry."))
             token = self._generate_token(4)
             request.env['mobile.verification'].sudo().create({
                 'token': token,
@@ -100,6 +99,36 @@ class AuthController(Controller):
         except Exception as e:
             _logger.error("%s", e)
             response = {'status':400,'response':{"error": _(e)},'message':"validation error"}
+        return response
+
+    @route('/api/reset_password/', type='json', auth='public', methods=['POST','OPTIONS'], cors=cors)
+    def web_auth_reset_password(self, *args, **kwargs):
+        qcontext = self.get_auth_signup_qcontext()
+
+        if not qcontext.get('reset_password_enabled'):
+            raise werkzeug.exceptions.NotFound()
+
+        if 'error' not in qcontext and request.httprequest.method == 'POST':
+            try:
+                login = qcontext.get('login')
+                assert login, _("No login provided.")
+                _logger.info(
+                    "Password reset attempt for <%s> by user <%s> from %s",
+                    login, request.env.user.login, request.httprequest.remote_addr)
+                request.env['res.users'].sudo().reset_password(login)
+                qcontext['message'] = _("An email has been sent with credentials to reset your password")
+            except UserError as e:
+                qcontext['error'] = e.args[0]
+            except SignupError:
+                qcontext['error'] = _("Could not reset your password")
+                _logger.exception('error when resetting password')
+            except Exception as e:
+                qcontext['error'] = str(e)
+        if 'error' not in qcontext:
+            response = {'status':200,'response':qcontext,'message':"success"}
+        else:
+            response = {'status':400,'response':{"error": qcontext['error']},'message':"validation error"}
+
         return response
 
     def get_auth_signup_qcontext(self):
@@ -169,7 +198,7 @@ class AuthController(Controller):
             raise UserError(_("The form was not properly filled in."))
         if values['user'].get('password') != qcontext.get('confirm_password'):
             raise UserError(_("Passwords do not match; please retype them."))
-        if values['user'].get('login') and not self._verify_mobile_number(values['user'].get('login')):
+        if values['user'].get('login') and not verify_mobile_number(values['user'].get('login')):
             raise UserError(_("Mobile number is wrong; please retry."))
 
         if qcontext.get('login'):
