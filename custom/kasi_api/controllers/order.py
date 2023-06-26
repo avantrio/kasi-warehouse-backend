@@ -21,7 +21,7 @@ class OrderController(http.Controller):
         if kwargs.get('method') == 'POST':
             user_id = http.request.uid
             order_id = kwargs.get('order_id')
-            vals = {'state':'sent','access_token':uuid.uuid4()}
+            vals = {'state':'sent','access_token':uuid.uuid4(),'payment_method':kwargs.get('payment_method'),'note':'Payment Method' + " " + ":" + " "+ kwargs.get('payment_method')}
             http.request.env['sale.order'].sudo().search([('id','=',order_id),('user_id','=',user_id),('state','=','draft')]).update(vals)
             return {'status':200,'response':"Updated",'message':"success"}
     
