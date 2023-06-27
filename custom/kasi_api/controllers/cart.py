@@ -9,7 +9,7 @@ class CartController(http.Controller):
 
     cors = "*"
 
-    @http.route('/api/cart',auth='user',type='json',methods=['DELETE','POST','OPTIONS'],cors=cors)
+    @http.route('/api/cart',auth='user',type='json',methods=['PUT','DELETE','POST','OPTIONS'],cors=cors)
     def cart(self, **kwargs):
         user_id = http.request.uid
         user = http.request.env['res.users'].sudo().search_read([('id','=',user_id)],fields=['partner_id'])
@@ -50,6 +50,22 @@ class CartController(http.Controller):
 
             response = {'status':200,'response':abandoned_order,'message':"success"}
             return response
+        
+        if kwargs.get('method') == 'PUT':
+            vals = {'product_uom_qty':kwargs.get('quantity')}
+            abandoned_order = http.request.env['sale.order'].sudo().search_read([('user_id','=',user_id),('state','=','draft')])
+            if not abandoned_order:
+                response = {'status':200,'response':"Nothing to update",'message':"success"}
+                return response
+            else:
+                order_line = http.request.env['sale.order.line'].sudo().search([('id','=',kwargs.get('order_line_id')),('order_id','=',abandoned_order[0].get('id'))])
+                if order_line:
+                    order_line.sudo().update(vals)
+                    response = {'status':200,'response':"Updated",'message':"success"}
+                    return response
+                else:
+                    response = {'status':200,'response':"Nothing to update",'message':"success"}
+                    return response
         
         if kwargs.get('method') == 'DELETE':
             abandoned_order = http.request.env['sale.order'].sudo().search_read([('user_id','=',user_id),('state','=','draft')])
