@@ -20,6 +20,7 @@ class BusinessController(Controller):
         partner = business.partner_id
         business_dict = business.read()[0]
         business_dict["address"] = self._get_partner_address(partner)
+        business_dict["location"] = self._get_partner_location(partner)
         response = {'status':200,'response':business_dict,'message':"success"}
         return response
 
@@ -33,6 +34,13 @@ class BusinessController(Controller):
             "township": partner.township 
         }
         return address
+
+    def _get_partner_location(self, partner):
+        location = {
+            "lat": partner.partner_latitude,
+            "long": partner.partner_longitude
+        }
+        return location
 
     @route('/api/address/townships/',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_townships(self,**kwargs):

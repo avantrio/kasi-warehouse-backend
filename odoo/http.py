@@ -1217,10 +1217,11 @@ class Response(werkzeug.wrappers.Response):
             self.headers.set('Access-Control-Allow-Origin', request.endpoint.routing['cors'])
             methods = 'GET, POST'
             if request.endpoint.routing['type'] == 'json':
-                methods = 'POST'
+                methods = 'POST, PUT, DELETE, PATCH, OPTIONS, GET'
             elif request.endpoint.routing.get('methods'):
                 methods = ', '.join(request.endpoint.routing['methods'])
             self.headers.set('Access-Control-Allow-Methods', methods)
+            self.headers.set('Access-Control-Allow-Credentials', 'true')
 
     @property
     def is_qweb(self):
