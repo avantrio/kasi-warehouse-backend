@@ -213,8 +213,7 @@ class AuthController(Controller):
         company = request.env['res.company'].sudo().create(values['company'])
         user = request.env['res.users'].sudo().create(values['user'])
         user.write({
-            'company_id': company.id,
-            'company_ids': [[6, False, [company.id]]],
+            'business_id': company.id
         })
         company.partner_id.write(values['partner'])
 
