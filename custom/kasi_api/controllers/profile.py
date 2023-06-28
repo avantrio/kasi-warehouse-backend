@@ -168,7 +168,7 @@ class ProfileController(Controller):
     def _update_profile(self, values):
         session_info = request.env['ir.http'].session_info()
         user = request.env['res.users'].sudo().search([('id', '=', session_info['uid'])])
-        company = user.company_id
+        company = request.env['res.company'].sudo().search([('id', '=', user.business_id)])
         partner = company.partner_id
         self._update_obj(values['user'], user)
         self._update_obj(values['company'], company)
