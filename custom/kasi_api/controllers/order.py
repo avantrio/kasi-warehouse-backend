@@ -12,9 +12,11 @@ class OrderController(http.Controller):
         if kwargs.get('method') == 'GET':
             validate_request(kwargs)
             user_id = http.request.uid
-            state = kwargs.get('state') if 'state' in kwargs else 'sent'
-            user = http.request.env['res.users'].sudo().search_read([('id','=',user_id)],fields=['partner_id'])
-            orders = http.request.env['sale.order'].sudo().search_read([('user_id','=',user[0].get('id')),('state','!=','draft'),('state','=',state)],order="id desc")
+            user = http.request.env['res.users'].sudo().search_read([('id','=',user_id)],fields=['partner_id'])            
+            if 'state' in kwargs:
+                orders = http.request.env['sale.order'].sudo().search_read([('user_id','=',user[0].get('id')),('state','!=','draft'),('state','=',kwargs.get('state'))],order="id desc")
+            else:
+                orders = http.request.env['sale.order'].sudo().search_read([('user_id','=',user[0].get('id')),('state','!=','draft')],order="id desc")
             response = {'status':200,'response':orders,'message':"success"}
             return response
         
