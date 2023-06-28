@@ -19,8 +19,8 @@ class ProfileController(Controller):
     def me(self,*args, **kwargs):
         validate_request(kwargs)
         session_info = request.env['ir.http'].session_info()
-        user = request.env['res.users'].sudo().search([('id', '=', session_info['uid'])])
-        response = {'status':200,'response': user.read(),'message':"success"}
+        user = request.env['res.users'].sudo().search_read([('id', '=', session_info['uid'])])
+        response = {'status':200,'response': user,'message':"success"}
         return response
 
     @route('/api/profile/me/',auth='user',type='json',methods=['PUT','OPTIONS'],cors=cors)
@@ -35,9 +35,10 @@ class ProfileController(Controller):
                 _logger.error("%s", e)
                 qcontext['error'] = _(e)
                 request.env.cr.rollback()
-
+        
         if 'error' not in qcontext:
-            response = {'status':200,'response':profile.read(),'message':"success"}
+            user = request.env['res.users'].sudo().search_read([('id', '=', profile.id)])
+            response = {'status':200,'response':user,'message':"success"}
         else:
             response = {'status':400,'response':{"error": qcontext['error']},'message':"validation error"}
         return response
@@ -72,7 +73,8 @@ class ProfileController(Controller):
         
 
         if 'error' not in qcontext:
-            response = {'status':200,'response':user.read(),'message':"success"}
+            user = request.env['res.users'].sudo().search_read([('id', '=', user.id)])
+            response = {'status':200,'response':user,'message':"success"}
         else:
             response = {'status':400,'response':{"error": qcontext['error']},'message':"validation error"}
         return response
@@ -108,7 +110,8 @@ class ProfileController(Controller):
         
 
         if 'error' not in qcontext:
-            response = {'status':200,'response':user.read(),'message':"success"}
+            user = request.env['res.users'].sudo().search_read([('id', '=', user.id)])
+            response = {'status':200,'response':user,'message':"success"}
         else:
             response = {'status':400,'response':{"error": qcontext['error']},'message':"validation error"}
         return response
