@@ -4,9 +4,9 @@ class Business(models.Model):
     _inherit="res.company"
 
     Types = [
-        ('BC', 'Beauty & Cosmetic stores'),
-        ('SL', 'Salons'),
-        ('SP', 'Spazarettes'),
+        ('BC', 'Beauty & Cosmetic store'),
+        ('SL', 'Salon'),
+        ('SP', 'Spazarette'),
         ('MW', 'Midi Wholesale'),
         ('MP', 'Market Place'),
     ]
