@@ -40,3 +40,49 @@ class OrderController(http.Controller):
             response = {'status':200,'response':orders,'message':"success"}
             return response
         
+    @http.route('/api/orders/<int:order_id>/promotions',auth='user',type='json',methods=['POST'],cors=cors)
+    def apply_promo_code(self,order_id, **kwargs):
+        user_id = http.request.uid
+        if kwargs.get('method') == 'POST':
+            order = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('user_id','=',user_id),('state','=','draft')])
+            if order:
+                promotion = http.request.env['coupon.program'].sudo().search_read([('program_type','=','promotion_program'),('promo_code','=',kwargs.get('promo_code'))])
+                if promotion:
+                    if promotion[0].get('rule_minimum_amount') > order[0].get('amount_total') or promotion[0].get('active') == False:
+                        return {'status':400,'response':"code is invalid",'message':"success"}
+                    else:
+                        if promotion[0].get('discount_type') == 'percentage':
+                            discount_price = self.calculate_percentage_promo_code_discount(promotion[0].get('discount_percentage'),order[0].get('amount_untaxed'))
+                            vals = self.generate_discount_order_line_values(promotion[0].get('discount_line_product_id')[0],order[0].get('id'),discount_price)
+                            http.request.env['sale.order.line'].sudo().create(vals)
+                            return {'status':200,'response':"code applied",'message':"success"}
+                        
+                        if promotion[0].get('discount_type') == 'fixed_amount':
+                            discount_price = promotion[0].get('discount_fixed_amount')
+                            vals = self.generate_discount_order_line_values(promotion[0].get('discount_line_product_id')[0],order[0].get('id'),discount_price)
+                            http.request.env['sale.order.line'].sudo().create(vals)
+                else:
+                    raise NotFound('Not found')
+                
+            else:
+                raise NotFound('Not found')
+            
+    def calculate_percentage_promo_code_discount(self,discount_percentage,total):
+        return round(float(total)/float(100) * float(discount_percentage),2)
+
+    def generate_discount_order_line_values(self,product_id,order_id,discount_price):
+        vals = {
+                "product_id":product_id,
+                "order_id":order_id,
+                "product_uom_qty":1,
+                "is_reward_line":True,
+                "price_unit": -discount_price,
+                "price_subtotal":-discount_price,
+                "price_total":-discount_price,
+                "price_reduce":-discount_price,
+                "price_reduce_taxinc":-discount_price,
+                "price_reduce_taxexcl":-discount_price
+                                    
+            }
+        return vals
+    
