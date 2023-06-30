@@ -52,9 +52,10 @@ class ProfileController(Controller):
                 session_info = request.env['ir.http'].session_info()
                 user = request.env['res.users'].sudo().search([('id', '=', session_info['uid'])])
                 values = self._prepare_login_update_values(qcontext)
+                db = ensure_db()   
+                self._auth_user(db, values['login'], values['password'])
                 self._update_obj(values, user)
                 request.env.cr.commit() 
-                db = ensure_db()    # as authenticate will use its own cursor we need to commit the current transaction
                 self._auth_user(db, values['login'], values['password'])
             except UserError as e:
                 qcontext['error'] = e.args[0]
