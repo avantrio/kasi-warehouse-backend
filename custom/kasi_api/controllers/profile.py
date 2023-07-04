@@ -53,7 +53,7 @@ class ProfileController(Controller):
                 user = request.env['res.users'].sudo().search([('id', '=', session_info['uid'])])
                 values = self._prepare_login_update_values(qcontext)
                 db = ensure_db()   
-                self._auth_user(db, values['login'], values['password'])
+                self._auth_user(db, user.login, values['password'])
                 self._update_obj(values, user)
                 request.env.cr.commit() 
                 self._auth_user(db, values['login'], values['password'])
