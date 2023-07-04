@@ -7,12 +7,14 @@ class OrderController(http.Controller):
 
     cors = "*"
 
-    @http.route('/api/orders',auth='user',type='json',methods=['POST','OPTIONS'],cors=cors)
+    @http.route('/api/orders',auth='user',type='json',methods=['POST','OPTIONS','PUT'],cors=cors)
     def order(self, **kwargs):
+        user_id = http.request.uid
+        user = http.request.env['res.users'].sudo().search_read([('id','=',user_id)],fields=['partner_id'])
+        partner_id = user[0].get('partner_id')[0]
+
         if kwargs.get('method') == 'GET':
             validate_request(kwargs)
-            user_id = http.request.uid
-            user = http.request.env['res.users'].sudo().search_read([('id','=',user_id)],fields=['partner_id'])            
             if 'state' in kwargs:
                 orders = http.request.env['sale.order'].sudo().search_read([('user_id','=',user[0].get('id')),('state','!=','draft'),('state','=',kwargs.get('state'))],order="id desc")
             else:
@@ -21,11 +23,19 @@ class OrderController(http.Controller):
             return response
         
         if kwargs.get('method') == 'POST':
-            user_id = http.request.uid
             order_id = kwargs.get('order_id')
+            order_to_be_updated = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('state','=','draft')],fields=['user_id'])
             vals = {'state':'sent','access_token':uuid.uuid4(),'payment_method':kwargs.get('payment_method'),'note':'Payment Method' + " " + ":" + " "+ kwargs.get('payment_method')}
-            http.request.env['sale.order'].sudo().search([('id','=',order_id),('user_id','=',user_id),('state','=','draft')]).update(vals)
+            if order_to_be_updated[0].get('user_id')[0] == 4 and order_to_be_updated[0].get('user_id')[1]  == 'Public user':
+                vals['user_id'] = user_id
+                vals['partner_id'] = partner_id
+                vals['partner_invoice_id'] = partner_id
+                vals['partner_shipping_id'] = partner_id
+
+            http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','draft')]).update(vals)
             return {'status':200,'response':"Updated",'message':"success"}
+        
+        
     
     @http.route('/api/orders/<int:order_id>',auth='user',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_order(self, order_id,**kwargs):
@@ -39,6 +49,31 @@ class OrderController(http.Controller):
         else:
             response = {'status':200,'response':orders,'message':"success"}
             return response
+    
+    @http.route('/api/orders/<int:order_id>',auth='user',type='json',methods=['PUT','OPTIONS'],cors=cors)
+    def update_order(self, order_id,**kwargs):
+        user_id = http.request.uid
+        user = http.request.env['res.users'].sudo().search_read([('id','=',user_id)],fields=['partner_id'])
+        partner_id = user[0].get('partner_id')[0]
+        public_order = kwargs.get('public_order')
+
+        if public_order and kwargs.get('method') == 'PUT':
+            order_to_be_updated = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('state','=','draft'),('user_id','=',4)],fields=['user_id'])
+            if order_to_be_updated:
+                vals = {
+                    'user_id':user_id,
+                    'partner_id':partner_id,
+                    'partner_invoice_id':partner_id,
+                    'partner_shipping_id':partner_id
+                }
+                http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','draft')]).update(vals)
+                respose = {'status':200,'response':"Updated",'message':"success"}
+            else:
+                respose = {'status':200,'response':"Nothing to Update",'message':"success"}
+        else:
+            respose = {'status':400,'response':"Invalid order",'message':"success"}
+
+        return respose
         
     @http.route('/api/orders/<int:order_id>/promotions',auth='user',type='json',methods=['POST'],cors=cors)
     def apply_promo_code(self,order_id, **kwargs):
