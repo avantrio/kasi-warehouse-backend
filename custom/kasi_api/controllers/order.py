@@ -62,15 +62,22 @@ class OrderController(http.Controller):
         public_order = kwargs.get('public_order')
 
         if public_order and kwargs.get('method') == 'PUT':
-            order_to_be_updated = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('state','=','draft'),('user_id','=',4)],fields=['user_id'])
+            abandoned_order =  http.request.env['sale.order'].sudo().search_read([('user_id','=',user_id),('state','=','draft')])
+            order_to_be_updated = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('state','=','draft'),('user_id','=',4)],fields=['user_id','website_order_line'])
             if order_to_be_updated:
-                vals = {
+                abandoned_order =  http.request.env['sale.order'].sudo().search_read([('user_id','=',user_id),('state','=','draft')])
+                if abandoned_order:
+                    order_lines = http.request.env['sale.order.line'].sudo().search([('id','in',order_to_be_updated[0].get('website_order_line'))])
+                    order_lines.sudo().update({'order_id':abandoned_order[0].get('id')})
+                else:
+                    vals = {
                     'user_id':user_id,
                     'partner_id':partner_id,
                     'partner_invoice_id':partner_id,
                     'partner_shipping_id':partner_id
-                }
-                http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','draft')]).update(vals)
+                    }
+                    http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','draft')]).update(vals)
+
                 respose = {'status':200,'response':"Updated",'message':"success"}
             else:
                 respose = {'status':200,'response':"Nothing to Update",'message':"success"}
