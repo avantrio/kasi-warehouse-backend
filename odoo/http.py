@@ -1214,7 +1214,8 @@ class Response(werkzeug.wrappers.Response):
         self.uid = uid
         # Support for Cross-Origin Resource Sharing
         if request.endpoint and 'cors' in request.endpoint.routing:
-            self.headers.set('Access-Control-Allow-Origin', request.endpoint.routing['cors'])
+            cors = request.httprequest.headers['Origin'] if 'Origin' in request.httprequest.headers else request.endpoint.routing['cors']
+            self.headers.set('Access-Control-Allow-Origin',cors)
             methods = 'GET, POST'
             if request.endpoint.routing['type'] == 'json':
                 methods = 'POST, PUT, DELETE, PATCH, OPTIONS, GET'
