@@ -152,10 +152,10 @@ class CartController(http.Controller):
 
     def add_order_lines_with_discounts(self,product,order_id):
         product_data = http.request.env['product.product'].sudo().search_read([('id','=',product.get('id'))],fields=['name','list_price'])
-        pricelist_items =  http.request.env['product.pricelist.item'].sudo().search_read([('product_id','=',product.get('id'))],fields=['min_quantity','pricelist_id','fixed_price'])
+        pricelist_items =  http.request.env['product.pricelist.item'].sudo().search_read([('product_id','=',product.get('id'))],fields=['min_quantity','pricelist_id','fixed_price','compute_price','percent_price'])
 
         if any(pricelist_item['pricelist_id'][0] == product.get('pricelist_id') for pricelist_item in pricelist_items):
-            #getting the applyable price list item from the list
+            #getting the applicable price list item from the list
             for pricelist_item in pricelist_items:
                 if pricelist_item.get('pricelist_id')[0] == product.get('pricelist_id'):
                     prircelist_item_of_prodct = pricelist_item
@@ -168,7 +168,10 @@ class CartController(http.Controller):
                     }
                 http.request.env['sale.order.line'].sudo().create(vals)
             else:
-                discount_percentage = self.calculate_discount_percentage(product_data[0].get('list_price'),prircelist_item_of_prodct.get('fixed_price'))
+                if prircelist_item_of_prodct.get('compute_price') == 'fixed':
+                    discount_percentage = self.calculate_discount_percentage(product_data[0].get('list_price'),prircelist_item_of_prodct.get('fixed_price'))
+                elif prircelist_item_of_prodct.get('compute_price') == 'percentage':
+                    discount_percentage = prircelist_item_of_prodct.get('percent_price')
                 vals = {
                         'order_id':order_id,
                         "product_uom_qty":product.get('quantity'),

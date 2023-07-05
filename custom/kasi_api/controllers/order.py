@@ -92,19 +92,18 @@ class OrderController(http.Controller):
                     else:
                         if promotion[0].get('discount_type') == 'percentage':
                             discount_price = self.calculate_percentage_promo_code_discount(promotion[0].get('discount_percentage'),order[0].get('amount_untaxed'))
-                            vals = self.generate_discount_order_line_values(promotion[0].get('discount_line_product_id')[0],order[0].get('id'),discount_price)
-                            http.request.env['sale.order.line'].sudo().create(vals)
-                            return {'status':200,'response':"code applied",'message':"success"}
                         
                         if promotion[0].get('discount_type') == 'fixed_amount':
                             discount_price = promotion[0].get('discount_fixed_amount')
-                            vals = self.generate_discount_order_line_values(promotion[0].get('discount_line_product_id')[0],order[0].get('id'),discount_price)
-                            http.request.env['sale.order.line'].sudo().create(vals)
+                        
+                        vals = self.generate_discount_order_line_values(promotion[0].get('discount_line_product_id')[0],order[0].get('id'),discount_price)
+                        http.request.env['sale.order.line'].sudo().create(vals)
+                        return {'status':200,'response':"code applied",'message':"success"}
                 else:
-                    raise NotFound('Not found')
+                    return {'status':400,'response':"Invalid code",'message':"success"}
                 
             else:
-                raise NotFound('Not found')
+                return {'status':400,'response':"Invalid order",'message':"success"}
             
     def calculate_percentage_promo_code_discount(self,discount_percentage,total):
         return round(float(total)/float(100) * float(discount_percentage),2)
