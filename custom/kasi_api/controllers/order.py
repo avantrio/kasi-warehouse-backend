@@ -113,7 +113,7 @@ class OrderController(http.Controller):
                 return {'status':400,'response':"Invalid order",'message':"success"}
             
     @http.route('/api/reorders',auth='user',type='json',methods=['POST','OPTIONS'],cors=cors)
-    def update_order(self,**kwargs):
+    def reorder(self,**kwargs):
         user_id = http.request.uid
         user = http.request.env['res.users'].sudo().search_read([('id','=',user_id)],fields=['partner_id'])
         partner_id = user[0].get('partner_id')[0]
