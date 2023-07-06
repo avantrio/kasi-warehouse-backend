@@ -32,10 +32,10 @@ class OrderController(http.Controller):
                 vals['partner_invoice_id'] = partner_id
                 vals['partner_shipping_id'] = partner_id
                 http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','draft')]).update(vals)
-                response =  {'status':200,'response':"Updated",'message':"success"}
+                response =  {'status':200,'response':"Order created successfully",'message':"success"}
             elif order_to_be_updated[0].get('user_id')[0] == user_id:
                 http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','draft')]).update(vals)
-                response =  {'status':200,'response':"Updated",'message':"success"}
+                response =  {'status':200,'response':"Order created successfully",'message':"success"}
             else:
                response = {'status':400,'response':"Invalid order",'message':"success"} 
         
@@ -112,6 +112,47 @@ class OrderController(http.Controller):
             else:
                 return {'status':400,'response':"Invalid order",'message':"success"}
             
+    @http.route('/api/reorders',auth='user',type='json',methods=['POST','OPTIONS'],cors=cors)
+    def update_order(self,**kwargs):
+        user_id = http.request.uid
+        user = http.request.env['res.users'].sudo().search_read([('id','=',user_id)],fields=['partner_id'])
+        partner_id = user[0].get('partner_id')[0]
+        order_id = kwargs.get('order_id')
+        order = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('user_id','=',user_id),('state','!=','draft')])
+
+        if not order:
+            return {'status':400,'response':"Invalid order",'message':"success"}
+        else:
+            order_lines = http.request.env['sale.order.line'].sudo().search_read([('order_id','=',order[0].get('id'))],fields=['product_uom_qty','product_id'])
+            abandoned_order = http.request.env['sale.order'].sudo().search_read([('user_id','=',user_id),('state','=','draft'),('partner_id','=',partner_id)])
+
+            if abandoned_order:
+                # removing existing cart order items
+                http.request.env['sale.order.line'].sudo().search([('order_id','=',abandoned_order[0].get('id'))]).unlink()
+                #assigning new products to cart order
+                for order_line in order_lines:
+                    vals = {
+                        'order_id':abandoned_order[0].get('id'),
+                        "product_uom_qty":order_line.get('product_uom_qty'),
+                        "product_id":order_line.get('product_id')[0]
+                    }
+                    http.request.env['sale.order.line'].sudo().create(vals)
+
+                return {'status':400,'response':"Existing cart is cleared and reorder products added to cart",'message':"success"}
+            else:
+                vals = {'partner_id':partner_id}
+                # creating new order
+                order = http.request.env['sale.order'].sudo().create(vals)
+                for order_line in order_lines:
+                    vals = {
+                        'order_id':order.id,
+                        "product_uom_qty":order_line.get('product_uom_qty'),
+                        "product_id":order_line.get('product_id')[0]
+                    }
+                    http.request.env['sale.order.line'].sudo().create(vals)
+            
+                return {'status':400,'response':"Reorder products added to cart",'message':"success"}
+
     def calculate_percentage_promo_code_discount(self,discount_percentage,total):
         return round(float(total)/float(100) * float(discount_percentage),2)
 
