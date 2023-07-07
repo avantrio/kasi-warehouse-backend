@@ -27,6 +27,8 @@ class CartController(http.Controller):
                     abandoned_order = http.request.env['sale.order'].sudo().search_read([('id','=',kwargs.get('order_id')),('state','=','draft'),('partner_id','=',partner_id)])
                     if abandoned_order:
                         order_lines = http.request.env['sale.order.line'].sudo().search_read([('id','in',abandoned_order[0].get('website_order_line'))])
+                        for order_line in order_lines:                            
+                            order_line['product_image_128'] = self.get_product_image_128(order_line)
                         abandoned_order[0]['order_lines'] = order_lines
                         response = {'status':200,'response':abandoned_order,'message':"success"}
                         return {'status':200,'response':abandoned_order,'message':"success"}
@@ -41,6 +43,8 @@ class CartController(http.Controller):
                 if abandoned_order:
                     order_lines = http.request.env['sale.order.line'].sudo().search_read([('id','in',abandoned_order[0].get('website_order_line'))])
                     abandoned_order[0]['order_lines'] = order_lines
+                    for order_line in order_lines:
+                        order_line['product_image_128'] = self.get_product_image_128(order_line)
                     response = {'status':200,'response':abandoned_order,'message':"success"}
                 else:
                     response = {'status':200,'response':"Your cart is empty!",'message':"success"}
@@ -188,7 +192,7 @@ class CartController(http.Controller):
         discount_percentage = math.floor(discount*100)/100
         return discount_percentage
         
-        
-
-
+    def get_product_image_128(self,order_line):
+        product_image_128 = http.request.env['product.product'].sudo().search_read([('id','=',order_line.get('product_id')[0])],fields=['image_128'])
+        return product_image_128[0].get('image_128')
     
