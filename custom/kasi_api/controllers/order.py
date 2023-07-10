@@ -138,7 +138,7 @@ class OrderController(http.Controller):
                     }
                     http.request.env['sale.order.line'].sudo().create(vals)
 
-                return {'status':400,'response':"Existing cart is cleared and reorder products added to cart",'message':"success"}
+                return {'status':200,'response':"Existing cart is cleared and reorder products added to cart",'message':"success"}
             else:
                 vals = {'partner_id':partner_id}
                 # creating new order
@@ -151,7 +151,7 @@ class OrderController(http.Controller):
                     }
                     http.request.env['sale.order.line'].sudo().create(vals)
             
-                return {'status':400,'response':"Reorder products added to cart",'message':"success"}
+                return {'status':200,'response':"Reorder products added to cart",'message':"success"}
 
     def calculate_percentage_promo_code_discount(self,discount_percentage,total):
         return round(float(total)/float(100) * float(discount_percentage),2)
