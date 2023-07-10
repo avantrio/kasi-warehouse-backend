@@ -24,21 +24,26 @@ class OrderController(http.Controller):
         
         if kwargs.get('method') == 'POST':
             order_id = kwargs.get('order_id')
-            order_to_be_updated = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('state','=','draft')],fields=['user_id'])
-            vals = {'state':'sent','access_token':uuid.uuid4(),'payment_method':kwargs.get('payment_method'),'note':'Payment Method' + " " + ":" + " "+ kwargs.get('payment_method')}
-            if order_to_be_updated[0].get('user_id')[0] == 4:
-                vals['user_id'] = user_id
-                vals['partner_id'] = partner_id
-                vals['partner_invoice_id'] = partner_id
-                vals['partner_shipping_id'] = partner_id
-                http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','draft')]).update(vals)
-                response =  {'status':200,'response':"Order created successfully",'message':"success"}
-            elif order_to_be_updated[0].get('user_id')[0] == user_id:
-                http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','draft')]).update(vals)
-                response =  {'status':200,'response':"Order created successfully",'message':"success"}
+            order_to_be_updated = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('state','=','draft')],fields=['user_id','website_order_line'])
+            order_lines = http.request.env['sale.order.line'].sudo().search_read([('id','in',order_to_be_updated[0].get('website_order_line'))],fields=['free_qty_today','product_id','product_uom_qty'])
+            invalid_order_lines = self.check_free_quantity(order_lines)
+            if invalid_order_lines:
+                response = {'status':400,'response':"Item quantity should be less than the available stock quantity. Please re-adjust the quantity","invalid_order_lines":invalid_order_lines,'message':"success"} 
             else:
-               response = {'status':400,'response':"Invalid order",'message':"success"} 
-        
+                vals = {'state':'sent','access_token':uuid.uuid4(),'payment_method':kwargs.get('payment_method'),'note':'Payment Method' + " " + ":" + " "+ kwargs.get('payment_method')}
+                if order_to_be_updated[0].get('user_id') == False or order_to_be_updated[0].get('user_id')[0] == 4:
+                    vals['user_id'] = user_id
+                    vals['partner_id'] = partner_id
+                    vals['partner_invoice_id'] = partner_id
+                    vals['partner_shipping_id'] = partner_id
+                    http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','draft')]).update(vals)
+                    response =  {'status':200,'response':"Order created successfully",'message':"success"}
+                elif order_to_be_updated[0].get('user_id')[0] == user_id:
+                    http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','draft')]).update(vals)
+                    response =  {'status':200,'response':"Order created successfully",'message':"success"}
+                else:
+                   response = {'status':400,'response':"Invalid order",'message':"success"} 
+
             return response
     
     @http.route('/api/orders/<int:order_id>',auth='user',type='json',methods=['POST','OPTIONS'],cors=cors)
@@ -172,3 +177,9 @@ class OrderController(http.Controller):
             }
         return vals
     
+    def check_free_quantity(self,order_lines):
+        invalid_order_lines = []
+        for order_line in order_lines:
+            if order_line.get('product_uom_qty') > order_line.get('free_qty_today'):
+                invalid_order_lines.append(order_line)
+        return invalid_order_lines
