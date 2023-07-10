@@ -33,6 +33,16 @@ class AuthController(Controller):
             response = {'status':400,'response':{"error": _(e)},'message':"validation error"}
         return response
 
+    @route('/api/session/check/', type='json', auth="user", methods=['POST','OPTIONS'], cors=cors)
+    def check(self):
+        request.session.check_security()
+        return None
+
+    @route('/api/session/logout/', type='json', auth="user", methods=['POST','OPTIONS'], cors=cors)
+    def logout(self):
+        request.session.logout()
+        return None
+
 
     @route('/api/register/', type='json', auth="public", methods=['POST','OPTIONS'], cors=cors, website=True, sitemap=False)
     def register(self, *args, **kwargs):
