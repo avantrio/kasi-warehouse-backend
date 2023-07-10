@@ -34,14 +34,16 @@ class AuthController(Controller):
         return response
 
     @route('/api/session/check/', type='json', auth="user", methods=['POST','OPTIONS'], cors=cors)
-    def check(self):
+    def check(self, *args, **kwargs):
         request.session.check_security()
-        return None
+        response = {'status':200,'response': None,'message':"success"}
+        return response
 
     @route('/api/session/logout/', type='json', auth="user", methods=['POST','OPTIONS'], cors=cors)
-    def logout(self):
+    def logout(self, *args, **kwargs):
         request.session.logout()
-        return None
+        response = {'status':200,'response': None,'message':"success"}
+        return response
 
 
     @route('/api/register/', type='json', auth="public", methods=['POST','OPTIONS'], cors=cors, website=True, sitemap=False)
