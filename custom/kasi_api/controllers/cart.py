@@ -133,16 +133,17 @@ class CartController(http.Controller):
             return False
         
         for product in products:
+            existing_product_uom_qty = self.adding_existing_product_to_cart(order_id,product)
             if 'pricelist_id' not in product:
                 vals = {
 
                         'order_id':order_id,
-                        "product_uom_qty":product.get('quantity'),
+                        "product_uom_qty":product.get('quantity') + existing_product_uom_qty,
                         "product_id":product.get('id')
                     }
                 http.request.env['sale.order.line'].sudo().create(vals)
             else:
-                self.add_order_lines_with_discounts(product,order_id)
+                self.add_order_lines_with_discounts(product,order_id,existing_product_uom_qty)
         return True
 
     def is_available_quantity(self,products):
@@ -154,7 +155,7 @@ class CartController(http.Controller):
                 return True
 
 
-    def add_order_lines_with_discounts(self,product,order_id):
+    def add_order_lines_with_discounts(self,product,order_id,existing_product_uom_qty):
         product_data = http.request.env['product.product'].sudo().search_read([('id','=',product.get('id'))],fields=['name','list_price'])
         pricelist_items =  http.request.env['product.pricelist.item'].sudo().search_read([('product_id','=',product.get('id'))],fields=['min_quantity','pricelist_id','fixed_price','compute_price','percent_price'])
 
@@ -167,7 +168,7 @@ class CartController(http.Controller):
                 _logger.error("Minimun quantity must be" + " " + str(prircelist_item_of_prodct.get('min_quantity')) + "discount not applied")
                 vals = {
                         'order_id':order_id,
-                        "product_uom_qty":product.get('quantity'),
+                        "product_uom_qty":product.get('quantity') + existing_product_uom_qty,
                         "product_id":product.get('id'),
                     }
                 http.request.env['sale.order.line'].sudo().create(vals)
@@ -178,7 +179,7 @@ class CartController(http.Controller):
                     discount_percentage = prircelist_item_of_prodct.get('percent_price')
                 vals = {
                         'order_id':order_id,
-                        "product_uom_qty":product.get('quantity'),
+                        "product_uom_qty":product.get('quantity') + existing_product_uom_qty,
                         "product_id":product.get('id'),
                         "discount":discount_percentage
                     }
@@ -196,3 +197,12 @@ class CartController(http.Controller):
         product_image_128 = http.request.env['product.product'].sudo().search_read([('id','=',order_line.get('product_id')[0])],fields=['image_128'])
         return product_image_128[0].get('image_128')
     
+    def adding_existing_product_to_cart(self,order_id,product):
+        existing_product_uom_qty = 0
+        order_lines = http.request.env['sale.order.line'].sudo().search_read([('order_id','=',order_id),('product_id','=',product.get('id'))],fields=['product_uom_qty'])
+        if order_lines:
+            order_line_ids = [order_line.get('id') for order_line in order_lines]
+            existing_product_uom_qty = order_lines[0].get('product_uom_qty')
+            http.request.env['sale.order.line'].sudo().search([('id','in',order_line_ids),('order_id','=',order_id)]).unlink()
+
+        return existing_product_uom_qty
