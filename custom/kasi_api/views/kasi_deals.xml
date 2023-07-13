@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="kasi_deals_tree" model="ir.ui.view">
+        <field name="name">kasi.deals.tree</field>
+        <field name="model">kasi.deals</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"></field>
+                <field name="start_date"></field>
+                <field name="end_date"></field>
+                <field name="category_id"></field>
+                <field name="is_featured"></field>
+                <field name="is_active"></field>
+            </tree>
+        </field>
+    </record>
+
+    <record id="kasi_deals_form" model="ir.ui.view">
+        <field name="name">kasi.deals.form</field>
+        <field name="model">kasi.deals</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"></field>
+                        </group>
+                        <group>
+                            <field name="start_date"></field>
+                            <field name="end_date"></field>
+                        </group>
+                        <group>
+                            <field name="is_featured"></field>
+                            <field name="is_active"></field>
+                        </group>
+
+                    </group>
+                    <group>
+                        <group>
+                            <field name="category_id"></field>
+                        </group>
+                        <group>
+                            <field name="image" widget="image" class="oe_avatar" options="{'preview_image': 'image'}"/>
+                        </group>
+                    </group>
+                    
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="kasi_deals_action" model="ir.actions.act_window">
+        <field name="name">Offers and Deals</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">kasi.deals</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create new Offers and Deals
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="kasi_deals_root"
+        name="Offers and Deals"
+        parent="website_sale.menu_catalog"
+        action="kasi_deals_action"
+        sequence="10" />
+
+</odoo>

@@ -9,4 +9,8 @@
     "depends": [
         "sale",
     ],
+    "data":[
+        'security/ir.model.access.csv',
+        'views/kasi_deals.xml',
+    ]
 }
