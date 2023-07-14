@@ -164,8 +164,8 @@ class CartController(http.Controller):
             for pricelist_item in pricelist_items:
                 if pricelist_item.get('pricelist_id')[0] == product.get('pricelist_id'):
                     prircelist_item_of_prodct = pricelist_item
-            if prircelist_item_of_prodct.get('min_quantity') > product.get('quantity'):
-                _logger.error("Minimun quantity must be" + " " + str(prircelist_item_of_prodct.get('min_quantity')) + "discount not applied")
+            if prircelist_item_of_prodct.get('min_quantity') > product.get('quantity') + existing_product_uom_qty:
+                _logger.error("Minimun quantity must be" + " " + str(prircelist_item_of_prodct.get('min_quantity')+existing_product_uom_qty) + "discount not applied")
                 vals = {
                         'order_id':order_id,
                         "product_uom_qty":product.get('quantity') + existing_product_uom_qty,
