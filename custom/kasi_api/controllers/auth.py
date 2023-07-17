@@ -129,7 +129,7 @@ class AuthController(Controller):
                     "Password reset attempt for <%s> by user <%s> from %s",
                     login, request.env.user.login, request.httprequest.remote_addr)
                 self.reset_password(login)
-                qcontext['message'] = _("An email has been sent with credentials to reset your password")
+                qcontext['message'] = _("A SMS has been sent with credentials to reset your password")
             except UserError as e:
                 qcontext['error'] = e.args[0]
             except SignupError:
