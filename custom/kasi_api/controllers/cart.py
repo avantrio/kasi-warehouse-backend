@@ -29,7 +29,6 @@ class CartController(http.Controller):
                         order_lines = http.request.env['sale.order.line'].sudo().search_read([('id','in',abandoned_order[0].get('website_order_line'))])
                         for order_line in order_lines:                            
                             order_line['product_image_128'] = self.get_product_image_128(order_line)
-                            order_line['promo_program'] = self.get_applied_promo_code(order_line)
                         abandoned_order[0]['order_lines'] = order_lines
                         response = {'status':200,'response':abandoned_order,'message':"success"}
                         return {'status':200,'response':abandoned_order,'message':"success"}
@@ -46,7 +45,6 @@ class CartController(http.Controller):
                     abandoned_order[0]['order_lines'] = order_lines
                     for order_line in order_lines:
                         order_line['product_image_128'] = self.get_product_image_128(order_line)
-                        order_line['promo_program'] = self.get_applied_promo_code(order_line)
                     response = {'status':200,'response':abandoned_order,'message':"success"}
                 else:
                     response = {'status':200,'response':"Your cart is empty!",'message':"success"}
@@ -208,10 +206,3 @@ class CartController(http.Controller):
             http.request.env['sale.order.line'].sudo().search([('id','in',order_line_ids),('order_id','=',order_id)]).unlink()
 
         return existing_product_uom_qty
-
-    def get_applied_promo_code(self,order_line):
-        if order_line.get('is_reward_line'):
-            promo_program = http.request.env['coupon.program'].sudo().search_read([('discount_line_product_id','=',order_line.get('product_id')[0])])
-            return promo_program
-        else:
-            return None
