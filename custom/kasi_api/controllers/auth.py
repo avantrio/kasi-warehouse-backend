@@ -5,6 +5,7 @@ from odoo import _,tools
 from odoo.addons.auth_signup.controllers.main import AuthSignupHome 
 from odoo.exceptions import UserError
 from odoo.addons.auth_signup.models.res_users import SignupError
+from odoo.addons.auth_signup.models.res_partner import now
 from odoo.exceptions import UserError
 from odoo.addons.web.controllers.main import ensure_db, Home
 from .services import validate_request, verify_mobile_number
@@ -127,7 +128,7 @@ class AuthController(Controller):
                 _logger.info(
                     "Password reset attempt for <%s> by user <%s> from %s",
                     login, request.env.user.login, request.httprequest.remote_addr)
-                request.env['res.users'].sudo().reset_password(login)
+                self.reset_password(login)
                 qcontext['message'] = _("An email has been sent with credentials to reset your password")
             except UserError as e:
                 qcontext['error'] = e.args[0]
@@ -177,6 +178,38 @@ class AuthController(Controller):
         values = self._prepare_signup_values(qcontext)
         self._signup_with_values(qcontext.get('token'), values)
         request.env.cr.commit()
+
+    def reset_password(self, login):
+        """ retrieve the user corresponding to login (login or mobile),
+            and reset their password
+        """
+        users = request.env['res.users'].sudo().search([('login', '=', login)])
+        if len(users) != 1:
+            raise Exception(_('Reset password: invalid username'))
+        return self.action_reset_password(users)
+
+    def action_reset_password(self, users):
+        """ create signup token for each user, and send their signup url by moblie """
+        if request.env.context.get('install_mode', False):
+            return
+        if users.filtered(lambda u: not u.active):
+            raise UserError(_("You cannot perform this action on an archived user."))
+        # prepare reset password signup
+        create_mode = bool(request.env.context.get('create_user'))
+
+        # no time limit for initial invitation, only for reset password
+        expiration = False if create_mode else now(days=+1)
+
+        users.mapped('partner_id').signup_prepare(signup_type="reset", expiration=expiration)
+
+        # send sms to users with their signup url
+        for user in users:
+            partner = user.partner_id
+            url = partner.sudo()._get_signup_url_for_action()
+
+            _logger.info("Reset password sms sent for user <%s>", user.login)
+            _logger.info("Reset URL: %s", url[partner.id])
+
 
     def _prepare_signup_values(self, qcontext):
         values = {
