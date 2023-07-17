@@ -110,6 +110,8 @@ class OrderController(http.Controller):
                         
                         vals = self.generate_discount_order_line_values(promotion[0].get('discount_line_product_id')[0],order[0].get('id'),discount_price)
                         http.request.env['sale.order.line'].sudo().create(vals)
+                        promotion_values = {"code_promo_program_id":promotion[0].get('id'),"promo_code":kwargs.get('promo_code')}
+                        http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','draft')]).update(promotion_values)
                         return {'status':200,'response':"code applied",'message':"success"}
                 else:
                     return {'status':400,'response':"Invalid code",'message':"success"}
@@ -173,7 +175,7 @@ class OrderController(http.Controller):
                 "price_reduce":-discount_price,
                 "price_reduce_taxinc":-discount_price,
                 "price_reduce_taxexcl":-discount_price
-                                    
+                  
             }
         return vals
     
