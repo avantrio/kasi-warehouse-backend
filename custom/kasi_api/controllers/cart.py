@@ -123,6 +123,11 @@ class CartController(http.Controller):
                 return response
             else:
                 http.request.env['sale.order.line'].sudo().search([('id','in',kwargs.get('order_line_ids')),('order_id','=',abandoned_order[0].get('id'))]).unlink()
+                
+                existing_order_lines = http.request.env['sale.order.line'].sudo().search_read([('order_id','=',abandoned_order[0].get('id'))],fields=['is_reward_line'])
+                if len(existing_order_lines) == 1 and existing_order_lines[0].get('is_reward_line') == True:
+                    http.request.env['sale.order.line'].sudo().search([('id','=',existing_order_lines[0].get('id')),('order_id','=',abandoned_order[0].get('id'))]).unlink()
+
                 response = {'status':200,'response':"Deleted",'message':"success"}
                 return response
 
