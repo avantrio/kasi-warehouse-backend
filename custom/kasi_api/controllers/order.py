@@ -2,24 +2,61 @@ from odoo import http
 from .services import validate_request
 from werkzeug.exceptions import NotFound
 import uuid
+from math import ceil
 
 class OrderController(http.Controller):
 
     cors = "*"
 
+    def paginate(self,page,page_size,total):
+        result = {}
+        if page <= 0  or page_size <= 0:
+            offset = 0
+            page_size = 25
+        else:
+            offset  = (page - 1) * page_size
+            result['total_count'] = total
+            result['current_page'] = page
+            result['previous_page'] = page - 1 if page != 1 else None
+            result['next_page'] = page + 1 if ceil(total/page_size) != result.get('current_page') else None
+            result['offset'] = offset
+            return result
+
     @http.route('/api/orders',auth='user',type='json',methods=['POST','OPTIONS','PUT'],cors=cors)
     def order(self, **kwargs):
+        filter_set = []
+        response = {}
         user_id = http.request.uid
         user = http.request.env['res.users'].sudo().search_read([('id','=',user_id)],fields=['partner_id'])
         partner_id = user[0].get('partner_id')[0]
 
         if kwargs.get('method') == 'GET':
             validate_request(kwargs)
+
             if 'state' in kwargs:
-                orders = http.request.env['sale.order'].sudo().search_read([('user_id','=',user[0].get('id')),('state','!=','draft'),('state','=',kwargs.get('state'))],order="id desc")
+                filter_set.append(('state','=',kwargs.get('state')))
+            filter_set.append(('user_id','=',user[0].get('id')))
+            filter_set.append(('state','!=','draft'))
+
+            orders_total = http.request.env['sale.order'].sudo().search_count(filter_set)
+
+            if 'page' and 'page_size' in kwargs:
+                page_size = kwargs.get('page_size')
+                result = self.paginate(kwargs.get('page'),page_size,orders_total)
+                response['total_count'] = result.get('total_count')
+                response['current_page'] = result.get('current_page')
+                response['previous_page'] = result.get('previous_page')
+                response['next_page'] = result.get('next_page')
+                offset= result.get('offset')
             else:
-                orders = http.request.env['sale.order'].sudo().search_read([('user_id','=',user[0].get('id')),('state','!=','draft')],order="id desc")
-            response = {'status':200,'response':orders,'message':"success"}
+                offset = 0
+                page_size = orders_total
+
+            orders = http.request.env['sale.order'].sudo().search_read(filter_set,order="id desc",offset=offset,limit=page_size)
+    
+            response['status'] = 200
+            response['response'] = orders
+            response['message'] = 'success'
             return response
         
         if kwargs.get('method') == 'POST':
