@@ -25,7 +25,7 @@ class OrderController(http.Controller):
         if kwargs.get('method') == 'POST':
             order_id = kwargs.get('order_id')
             order_to_be_updated = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('state','=','draft')],fields=['user_id','website_order_line'])
-            order_lines = http.request.env['sale.order.line'].sudo().search_read([('id','in',order_to_be_updated[0].get('website_order_line'))],fields=['free_qty_today','product_id','product_uom_qty'])
+            order_lines = http.request.env['sale.order.line'].sudo().search_read([('id','in',order_to_be_updated[0].get('website_order_line'))],fields=['free_qty_today','product_id','product_uom_qty','is_reward_line'])
             invalid_order_lines = self.check_free_quantity(order_lines)
             if invalid_order_lines:
                 response = {'status':400,'response':"Item quantity should be less than the available stock quantity. Please re-adjust the quantity","invalid_order_lines":invalid_order_lines,'message':"success"} 
@@ -182,6 +182,7 @@ class OrderController(http.Controller):
     def check_free_quantity(self,order_lines):
         invalid_order_lines = []
         for order_line in order_lines:
-            if order_line.get('product_uom_qty') > order_line.get('free_qty_today'):
-                invalid_order_lines.append(order_line)
+            if not order_line.get('is_reward_line'):
+                if order_line.get('product_uom_qty') > order_line.get('free_qty_today'):
+                    invalid_order_lines.append(order_line)
         return invalid_order_lines
