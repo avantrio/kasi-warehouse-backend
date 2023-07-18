@@ -128,11 +128,14 @@ class OrderController(http.Controller):
 
         return respose
         
-    @http.route('/api/orders/<int:order_id>/promotions',auth='user',type='json',methods=['POST'],cors=cors)
+    @http.route('/api/orders/<int:order_id>/promotions',auth='user',type='json',methods=['POST','OPTIONS'],cors=cors)
     def apply_promo_code(self,order_id, **kwargs):
         user_id = http.request.uid
         if kwargs.get('method') == 'POST':
             order = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('user_id','=',user_id),('state','=','draft')])
+            promo_order_line = http.request.env['sale.order.line'].sudo().search_read([('order_id','=',order[0].get('id')),('is_reward_line','=',True)])
+            if promo_order_line:
+                return {'status':400,'response':"Cannot apply multiple promo codes",'message':"success"}
             if order:
                 promotion = http.request.env['coupon.program'].sudo().search_read([('program_type','=','promotion_program'),('promo_code','=',kwargs.get('promo_code'))])
                 if promotion:
@@ -167,7 +170,7 @@ class OrderController(http.Controller):
         if not order:
             return {'status':400,'response':"Invalid order",'message':"success"}
         else:
-            order_lines = http.request.env['sale.order.line'].sudo().search_read([('order_id','=',order[0].get('id'))],fields=['product_uom_qty','product_id'])
+            order_lines = http.request.env['sale.order.line'].sudo().search_read([('order_id','=',order[0].get('id'))],fields=['product_uom_qty','product_id','is_reward_line'])
             abandoned_order = http.request.env['sale.order'].sudo().search_read([('user_id','=',user_id),('state','=','draft'),('partner_id','=',partner_id)])
 
             if abandoned_order:
@@ -175,12 +178,13 @@ class OrderController(http.Controller):
                 http.request.env['sale.order.line'].sudo().search([('order_id','=',abandoned_order[0].get('id'))]).unlink()
                 #assigning new products to cart order
                 for order_line in order_lines:
-                    vals = {
-                        'order_id':abandoned_order[0].get('id'),
-                        "product_uom_qty":order_line.get('product_uom_qty'),
-                        "product_id":order_line.get('product_id')[0]
-                    }
-                    http.request.env['sale.order.line'].sudo().create(vals)
+                    if not order_line.get('is_reward_line'):
+                        vals = {
+                            'order_id':abandoned_order[0].get('id'),
+                            "product_uom_qty":order_line.get('product_uom_qty'),
+                            "product_id":order_line.get('product_id')[0]
+                        }
+                        http.request.env['sale.order.line'].sudo().create(vals)
 
                 return {'status':200,'response':"Existing cart is cleared and reorder products added to cart",'message':"success"}
             else:
@@ -188,12 +192,13 @@ class OrderController(http.Controller):
                 # creating new order
                 order = http.request.env['sale.order'].sudo().create(vals)
                 for order_line in order_lines:
-                    vals = {
-                        'order_id':order.id,
-                        "product_uom_qty":order_line.get('product_uom_qty'),
-                        "product_id":order_line.get('product_id')[0]
-                    }
-                    http.request.env['sale.order.line'].sudo().create(vals)
+                    if not order_line.get('is_reward_line'):
+                        vals = {
+                            'order_id':order.id,
+                            "product_uom_qty":order_line.get('product_uom_qty'),
+                            "product_id":order_line.get('product_id')[0]
+                        }
+                        http.request.env['sale.order.line'].sudo().create(vals)
             
                 return {'status':200,'response':"Reorder products added to cart",'message':"success"}
 
