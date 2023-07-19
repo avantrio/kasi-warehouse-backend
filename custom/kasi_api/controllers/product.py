@@ -2,7 +2,7 @@ from odoo import http
 from werkzeug.exceptions import NotFound
 from math import ceil
 
-from .services import validate_request
+from .services import validate_request,paginate
 
 class ProductTemplateController(http.Controller):
 
@@ -24,19 +24,6 @@ class ProductTemplateController(http.Controller):
                 return True
         return False
 
-    def paginate(self,page,page_size,total):
-        result = {}
-        if page <= 0  or page_size <= 0:
-            offset = 0
-            page_size = 25
-        else:
-            offset  = (page - 1) * page_size
-            result['total_count'] = total
-            result['current_page'] = page
-            result['previous_page'] = page - 1 if page != 1 else None
-            result['next_page'] = page + 1 if ceil(total/page_size) != result.get('current_page') else None
-            result['offset'] = offset
-            return result
 
     @http.route('/api/products',auth='public',type='json',methods=['POST','OPTIONS'],cors=cors)
     def get_products(self, **kwargs):
@@ -64,7 +51,7 @@ class ProductTemplateController(http.Controller):
 
         if 'page' and 'page_size' in kwargs:
             page_size = kwargs.get('page_size')
-            result = self.paginate(kwargs.get('page'),page_size,products_total)
+            result = paginate(kwargs.get('page'),page_size,products_total)
             response['total_count'] = result.get('total_count')
             response['current_page'] = result.get('current_page')
             response['previous_page'] = result.get('previous_page')
