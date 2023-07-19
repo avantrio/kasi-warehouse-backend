@@ -2,25 +2,11 @@ from odoo import http
 from .services import validate_request
 from werkzeug.exceptions import NotFound
 import uuid
-from math import ceil
+from .services import paginate
 
 class OrderController(http.Controller):
 
     cors = "*"
-
-    def paginate(self,page,page_size,total):
-        result = {}
-        if page <= 0  or page_size <= 0:
-            offset = 0
-            page_size = 25
-        else:
-            offset  = (page - 1) * page_size
-            result['total_count'] = total
-            result['current_page'] = page
-            result['previous_page'] = page - 1 if page != 1 else None
-            result['next_page'] = page + 1 if ceil(total/page_size) != result.get('current_page') else None
-            result['offset'] = offset
-            return result
 
     @http.route('/api/orders',auth='user',type='json',methods=['POST','OPTIONS','PUT'],cors=cors)
     def order(self, **kwargs):
@@ -42,7 +28,7 @@ class OrderController(http.Controller):
 
             if 'page' and 'page_size' in kwargs:
                 page_size = kwargs.get('page_size')
-                result = self.paginate(kwargs.get('page'),page_size,orders_total)
+                result = paginate(kwargs.get('page'),page_size,orders_total)
                 response['total_count'] = result.get('total_count')
                 response['current_page'] = result.get('current_page')
                 response['previous_page'] = result.get('previous_page')
