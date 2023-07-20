@@ -61,7 +61,12 @@ class OrderController(http.Controller):
         
         if kwargs.get('method') == 'POST':
             order_id = kwargs.get('order_id')
-            order_to_be_updated = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('state','=','draft')],fields=['user_id','website_order_line'])
+            order_to_be_updated = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('state','=','draft')],fields=['user_id','website_order_line','amount_total'])
+
+            credit_limit_check_passed = self.check_credit_limit(user_id,order_to_be_updated)
+            if not credit_limit_check_passed:
+                return {'status':400,'response':"Credit limit exceeded",'message':"success"}
+
             order_lines = http.request.env['sale.order.line'].sudo().search_read([('id','in',order_to_be_updated[0].get('website_order_line'))],fields=['free_qty_today','product_id','product_uom_qty','is_reward_line'])
             invalid_order_lines = self.check_free_quantity(order_lines)
             if invalid_order_lines:
@@ -223,3 +228,15 @@ class OrderController(http.Controller):
                 if order_line.get('product_uom_qty') > order_line.get('free_qty_today'):
                     invalid_order_lines.append(order_line)
         return invalid_order_lines
+
+    def check_credit_limit(self,user_id,current_order):
+        CREDIT_LIMIT = 20000
+        existing_invoice_total = 0
+        invoices = http.request.env['account.move'].sudo().search_read([('user_id','=',user_id),('payment_state','!=','paid')],fields=['amount_total'])
+        new_order_value = current_order[0].get('amount_total')
+        for invoice in invoices:
+            existing_invoice_total += invoice.get('amount_total') 
+
+        if existing_invoice_total + new_order_value < float(CREDIT_LIMIT):
+            return True
+        return False
