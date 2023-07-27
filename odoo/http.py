@@ -1212,6 +1212,10 @@ class Response(werkzeug.wrappers.Response):
         self.qcontext = qcontext or dict()
         self.qcontext['response_template'] = self.template
         self.uid = uid
+
+        if self.response:
+            response = json.loads(self.response[0].decode())
+
         # Support for Cross-Origin Resource Sharing
         if request.endpoint and 'cors' in request.endpoint.routing:
             cors = request.httprequest.headers['Origin'] if 'Origin' in request.httprequest.headers else request.endpoint.routing['cors']
@@ -1221,6 +1225,12 @@ class Response(werkzeug.wrappers.Response):
                 methods = 'POST, PUT, DELETE, PATCH, OPTIONS, GET'
             elif request.endpoint.routing.get('methods'):
                 methods = ', '.join(request.endpoint.routing['methods'])
+            self.headers.set('Access-Control-Allow-Methods', methods)
+            self.headers.set('Access-Control-Allow-Credentials', 'true')
+        
+        if response and 'error' in response and response["error"]["code"] == 100:
+            methods = 'POST, PUT, DELETE, PATCH, OPTIONS, GET'
+            self.headers.set('Access-Control-Allow-Origin',"*")
             self.headers.set('Access-Control-Allow-Methods', methods)
             self.headers.set('Access-Control-Allow-Credentials', 'true')
 
