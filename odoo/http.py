@@ -1213,6 +1213,7 @@ class Response(werkzeug.wrappers.Response):
         self.qcontext['response_template'] = self.template
         self.uid = uid
 
+        response = None
         if self.response:
             response = json.loads(self.response[0].decode())
 
