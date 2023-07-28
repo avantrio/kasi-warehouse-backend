@@ -146,6 +146,7 @@ class ProfileController(Controller):
         values={}
         values['login'] = qcontext.get('login')
         values['password'] = qcontext.get('password')
+        values['mobile'] = qcontext.get('login')
         if not values and ('login', 'password') not in values:
             raise UserError(_("The form was not properly filled in."))
         if values.get('login') and not verify_mobile_number(values.get('login')):
