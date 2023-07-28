@@ -1233,7 +1233,7 @@ class Response(werkzeug.wrappers.Response):
             if request.endpoint and 'cors' in request.endpoint.routing:
                 cors = request.httprequest.headers['Origin'] if 'Origin' in request.httprequest.headers else request.endpoint.routing['cors']
             else:
-                cors = "*"
+                cors = request.httprequest.headers['Origin'] if 'Origin' in request.httprequest.headers else "*"
             methods = 'POST, PUT, DELETE, PATCH, OPTIONS, GET'
             self.headers.set('Access-Control-Allow-Origin',cors)
             self.headers.set('Access-Control-Allow-Methods', methods)
