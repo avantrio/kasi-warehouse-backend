@@ -1227,10 +1227,14 @@ class Response(werkzeug.wrappers.Response):
                 methods = ', '.join(request.endpoint.routing['methods'])
             self.headers.set('Access-Control-Allow-Methods', methods)
             self.headers.set('Access-Control-Allow-Credentials', 'true')
-        
+
         if response and 'error' in response and response["error"]["code"] == 100:
+            if request.endpoint and 'cors' in request.endpoint.routing:
+                cors = request.httprequest.headers['Origin'] if 'Origin' in request.httprequest.headers else request.endpoint.routing['cors']
+            else:
+                cors = "*"
             methods = 'POST, PUT, DELETE, PATCH, OPTIONS, GET'
-            self.headers.set('Access-Control-Allow-Origin',"*")
+            self.headers.set('Access-Control-Allow-Origin',cors)
             self.headers.set('Access-Control-Allow-Methods', methods)
             self.headers.set('Access-Control-Allow-Credentials', 'true')
 
