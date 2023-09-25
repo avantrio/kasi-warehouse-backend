@@ -3,6 +3,7 @@ from .services import validate_request
 from werkzeug.exceptions import NotFound
 import uuid
 from .services import paginate
+import math
 
 class OrderController(http.Controller):
 
@@ -221,7 +222,7 @@ class OrderController(http.Controller):
         return invalid_order_lines
 
     def check_credit_limit(self,user_id,current_order):
-        CREDIT_LIMIT = 20000
+        CREDIT_LIMIT = math.inf
         existing_invoice_total = 0
         invoices = http.request.env['account.move'].sudo().search_read([('user_id','=',user_id),('payment_state','!=','paid')],fields=['amount_total'])
         new_order_value = current_order[0].get('amount_total')
