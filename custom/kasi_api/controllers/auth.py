@@ -8,7 +8,7 @@ from odoo.addons.auth_signup.models.res_users import SignupError
 from odoo.addons.auth_signup.models.res_partner import now
 from odoo.exceptions import UserError
 from odoo.addons.web.controllers.main import ensure_db, Home
-from .services import validate_request, verify_mobile_number
+from .services import validate_request, verify_mobile_number,send_sms
 
 from base64 import b32encode
 from random import randint
@@ -87,6 +87,7 @@ class AuthController(Controller):
                 'mobile_number': mobile
             })
             _logger.info("SMS: %s" % token)
+            send_sms(mobile,f'Your Kasi Warehouse verification code: {token}')
             response = {'status':200,'response':{},'message':"success"}
         except Exception as e:
             _logger.error("%s", e)
@@ -209,6 +210,7 @@ class AuthController(Controller):
 
             _logger.info("Reset password sms sent for user <%s>", user.login)
             _logger.info("Reset URL: %s", url[partner.id])
+            send_sms(user.login,f'Your Kasi Warehouse password reset URL: {url[partner.id]}')
 
 
     def _prepare_signup_values(self, qcontext):
