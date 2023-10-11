@@ -7,6 +7,16 @@ from phonenumbers import carrier
 from phonenumbers.phonenumberutil import number_type
 from math import ceil
 import re
+from twilio.rest import Client
+import os
+import logging
+_logger = logging.getLogger(__name__)
+
+
+ACCOUNT_SID =  os.environ.get('ACCOUNT_SID')
+AUTH_TOKEN =  os.environ.get('AUTH_TOKEN')
+FROM_NUMBER = os.environ.get('FROM_NUMBER')
+client = Client(ACCOUNT_SID, AUTH_TOKEN)
 
 def validate_request(kwargs):
     if 'method' not in kwargs or kwargs.get('method') != 'GET':
@@ -32,4 +42,14 @@ def paginate(page,page_size,total):
         result['next_page'] = page + 1 if ceil(total/page_size) != result.get('current_page') else None
         result['offset'] = offset
         return result
+
+def send_sms(to,body):
+    message = client.messages \
+    .create(
+         body=body,
+         from_=FROM_NUMBER,
+         to=to
+     )
+    _logger.info("SMS sent successfully: %s" % message.sid)
+
     
