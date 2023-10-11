@@ -9,6 +9,9 @@ from math import ceil
 import re
 from twilio.rest import Client
 import os
+import logging
+_logger = logging.getLogger(__name__)
+
 
 ACCOUNT_SID =  os.environ.get('ACCOUNT_SID')
 AUTH_TOKEN =  os.environ.get('AUTH_TOKEN')
@@ -47,6 +50,6 @@ def send_sms(to,body):
          from_=FROM_NUMBER,
          to=to
      )
-    print(message.sid)
+    _logger.info("SMS sent successfully: %s" % message.sid)
 
     
