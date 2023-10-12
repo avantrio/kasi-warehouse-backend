@@ -1214,8 +1214,8 @@ class Response(werkzeug.wrappers.Response):
         self.uid = uid
 
         response = None
-        # if self.response:
-        #     response = json.loads(self.response[0].decode())
+        if self.response and self.response is not None and request.endpoint.routing['type'] == 'json':
+            response = json.loads(self.response[0].decode())
 
         # Support for Cross-Origin Resource Sharing
         if request.endpoint and 'cors' in request.endpoint.routing:
