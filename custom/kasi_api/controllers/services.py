@@ -44,12 +44,15 @@ def paginate(page,page_size,total):
         return result
 
 def send_sms(to,body):
-    message = client.messages \
-    .create(
-         body=body,
-         from_=FROM_NUMBER,
-         to=to
-     )
-    _logger.info("SMS sent successfully: %s" % message.sid)
+    try:
+        message = client.messages \
+        .create(
+            body=body,
+            from_=FROM_NUMBER,
+            to=to
+        )
+        _logger.info("SMS sent successfully: %s" % message.sid)
+    except Exception:
+        _logger.error("SMS sent failed")
 
     
