@@ -13,9 +13,10 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
-ACCOUNT_SID =  os.environ.get('ACCOUNT_SID')
-AUTH_TOKEN =  os.environ.get('AUTH_TOKEN')
-FROM_NUMBER = os.environ.get('FROM_NUMBER')
+ACCOUNT_SID =  'ACc10d7dd957260888536c2b19d41b62a9'
+AUTH_TOKEN =  'a4960483ec9b2b1ef81798a7c289981e'
+FROM_NUMBER = '+16032871236'
+
 client = Client(ACCOUNT_SID, AUTH_TOKEN)
 
 def validate_request(kwargs):
