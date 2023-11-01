@@ -9,12 +9,12 @@ class ProductTemplateController(http.Controller):
     template_fields = ['price','active','is_product_variant','standard_price','pricelist_item_count',
               'image_128','__last_update','display_name','create_uid','create_date','write_date','qty_available','virtual_available','incoming_qty','outgoing_qty','base_unit_price',
               'is_published','name','description','type','detailed_type','categ_id','currency_id','list_price','product_variant_ids','product_variant_id','product_variant_count','alternative_product_ids',
-              'product_template_image_ids']
+              'product_template_image_ids','public_categ_ids']
     
     product_fields = ['price','price_extra','lst_price','partner_ref','active','product_tmpl_id','product_template_attribute_value_ids','is_product_variant','standard_price','pricelist_item_count',
               'image_128','__last_update','display_name','create_uid','create_date','write_date','qty_available','virtual_available','free_qty','incoming_qty','outgoing_qty','base_unit_price',
               'is_published','name','description','type','detailed_type','categ_id','currency_id','list_price','product_variant_ids','product_variant_id','product_variant_count','alternative_product_ids',
-              'product_template_image_ids']
+              'product_template_image_ids','public_categ_ids']
 
         
     @http.route('/api/product-templates',auth='public',type='json',methods=['POST','OPTIONS'],cors="*")
@@ -28,7 +28,7 @@ class ProductTemplateController(http.Controller):
             order_by = kwargs.get('order_by')
 
         if 'category_ids' in kwargs:
-            filter_set.append(('categ_id','in',kwargs.get('category_ids')))
+            filter_set.append(('public_categ_ids','in',kwargs.get('category_ids')))
         if 'list_price_gte' in kwargs:
             filter_set.append(('list_price','>=',kwargs.get('list_price_gte')))
         if 'list_price_lte' in kwargs:
@@ -53,6 +53,11 @@ class ProductTemplateController(http.Controller):
             page_size = product_templates_total
 
         product_tempaltes = http.request.env['product.template'].sudo().search_read(filter_set,order=order_by,limit=page_size,offset=offset,fields=self.template_fields)
+
+        for product_tempalte in product_tempaltes:
+            product_public_categories = http.request.env['product.public.category'].sudo().search_read([('id', 'in', product_tempalte.get('public_categ_ids'))],
+                                                                                                                       fields = ['name','id'])
+            product_tempalte['product_public_categories'] = product_public_categories
 
         response['status'] = 200
         response['response'] = product_tempaltes
@@ -85,6 +90,9 @@ class ProductTemplateController(http.Controller):
             product_template_images  = http.request.env['product.image'].sudo().search_read([('id','in',product.get('product_template_image_ids'))])
             product['extra_product_media'] = product_template_images
 
+            product_public_categories = http.request.env['product.public.category'].sudo().search_read([('id', 'in', product.get('public_categ_ids'))],
+                                                                                                                       fields = ['name','id'])
+            product['product_public_categories'] = product_public_categories
 
         response = {'status':200,'response':products,'message':"success"}
         return response
