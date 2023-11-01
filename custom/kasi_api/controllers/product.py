@@ -10,7 +10,7 @@ class ProductTemplateController(http.Controller):
     fields = ['price','price_extra','lst_price','partner_ref','active','product_tmpl_id','product_template_attribute_value_ids','is_product_variant','standard_price','pricelist_item_count',
               'image_128','__last_update','display_name','create_uid','create_date','write_date','qty_available','virtual_available','free_qty','incoming_qty','outgoing_qty','base_unit_price',
               'is_published','name','description','type','detailed_type','categ_id','currency_id','list_price','product_variant_ids','product_variant_id','product_variant_count','alternative_product_ids',
-              'product_template_image_ids']
+              'product_template_image_ids','public_categ_ids']
 
     def filter_products_based_on_color(self,product,html_colors):
         for product_attribute_value in product.get('product_attribute_values'):
@@ -36,7 +36,7 @@ class ProductTemplateController(http.Controller):
             order_by = kwargs.get('order_by')
 
         if 'category_ids' in kwargs:
-            filter_set.append(('categ_id','in',kwargs.get('category_ids')))
+            filter_set.append(('public_categ_ids','in',kwargs.get('category_ids')))
         if 'list_price_gte' in kwargs:
             filter_set.append(('list_price','>=',kwargs.get('list_price_gte')))
         if 'list_price_lte' in kwargs:
@@ -73,6 +73,11 @@ class ProductTemplateController(http.Controller):
             pricelist_items =  http.request.env['product.pricelist.item'].sudo().search_read([('product_id','=',product.get('id'))])
             product['pricelist_items'] = pricelist_items
 
+            product_public_categories = http.request.env['product.public.category'].sudo().search_read([('id', 'in', product.get('public_categ_ids'))],
+                                                                                                                       fields = ['name','id'])
+            product['product_public_categories'] = product_public_categories
+
+
         if 'html_colors' in kwargs:
             products[:] = (product for product in products if self.filter_products_based_on_color(product,kwargs.get('html_colors')))
         
@@ -100,6 +105,10 @@ class ProductTemplateController(http.Controller):
 
             product_template_images  = http.request.env['product.image'].sudo().search_read([('id','in',product.get('product_template_image_ids'))])
             product['extra_product_media'] = product_template_images
+
+            product_public_categories = http.request.env['product.public.category'].sudo().search_read([('id', 'in', product.get('public_categ_ids'))],
+                                                                                                                       fields = ['name','id'])
+            product['product_public_categories'] = product_public_categories
 
         if not products:
             raise NotFound('Not found')
