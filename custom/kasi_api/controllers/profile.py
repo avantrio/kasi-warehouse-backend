@@ -52,7 +52,7 @@ class ProfileController(Controller):
                 session_info = request.env['ir.http'].session_info()
                 user = request.env['res.users'].sudo().search([('id', '=', session_info['uid'])])
                 values = self._prepare_login_update_values(qcontext)
-                db = ensure_db()   
+                db = request.env.cr.dbname   
                 self._auth_user(db, user.login, values['password'])
                 self._update_obj(values, user)
                 request.env.cr.commit() 
@@ -88,7 +88,7 @@ class ProfileController(Controller):
             try: 
                 session_info = request.env['ir.http'].session_info()
                 user = request.env['res.users'].sudo().search([('id', '=', session_info['uid'])])
-                db = ensure_db()
+                db = request.env.cr.dbname
                 self._auth_user(db, user.login, qcontext['password'])
                 values = self._prepare_password_update_values(qcontext)
                 self._update_obj(values, user)

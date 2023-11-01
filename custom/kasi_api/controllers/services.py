@@ -13,9 +13,10 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
-ACCOUNT_SID =  os.environ.get('ACCOUNT_SID')
-AUTH_TOKEN =  os.environ.get('AUTH_TOKEN')
-FROM_NUMBER = os.environ.get('FROM_NUMBER')
+ACCOUNT_SID = 'ACCOUNT_SID'
+AUTH_TOKEN =  'AUTH_TOKEN'
+FROM_NUMBER = 'FROM_NUMBER'
+
 client = Client(ACCOUNT_SID, AUTH_TOKEN)
 
 def validate_request(kwargs):
@@ -52,7 +53,8 @@ def send_sms(to,body):
             to=to
         )
         _logger.info("SMS sent successfully: %s" % message.sid)
-    except Exception:
+    except Exception as e:
+        _logger.error("SMS sent failed" + str(e))
         _logger.error("SMS sent failed")
 
     

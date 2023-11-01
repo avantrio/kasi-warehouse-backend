@@ -25,7 +25,7 @@ class AuthController(Controller):
     @route('/api/session/authenticate/', type='json', auth="none", methods=['POST','OPTIONS'], cors=cors)
     def authenticate(self, login, password, base_location=None):
         try:
-            db = ensure_db()
+            db = request.env.cr.dbname
             request.session.authenticate(db, login, password)
             session_info = request.env['ir.http'].session_info()
             response = {'status':200,'response': session_info,'message':"success"}
@@ -256,7 +256,7 @@ class AuthController(Controller):
         return values
 
     def _signup_with_values(self, token, values):
-        db = ensure_db()
+        db = request.env.cr.dbname
         company = request.env['res.company'].sudo().create(values['company'])
         user = request.env['res.users'].sudo().create(values['user'])
         user.write({
