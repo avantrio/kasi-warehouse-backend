@@ -1,23 +1,19 @@
 
 from odoo import http
 from werkzeug.exceptions import MethodNotAllowed
-
+import requests
 import phonenumbers
 from phonenumbers import carrier
 from phonenumbers.phonenumberutil import number_type
 from math import ceil
 import re
-from twilio.rest import Client
-import os
 import logging
 _logger = logging.getLogger(__name__)
 
 
-ACCOUNT_SID = 'ACCOUNT_SID'
-AUTH_TOKEN =  'AUTH_TOKEN'
-FROM_NUMBER = 'FROM_NUMBER'
 
-client = Client(ACCOUNT_SID, AUTH_TOKEN)
+ADMIN_USERNAME = ''
+ADMIN_PASSWORD = ''
 
 def validate_request(kwargs):
     if 'method' not in kwargs or kwargs.get('method') != 'GET':
@@ -46,15 +42,9 @@ def paginate(page,page_size,total):
 
 def send_sms(to,body):
     try:
-        message = client.messages \
-        .create(
-            body=body,
-            from_=FROM_NUMBER,
-            to=to
-        )
-        _logger.info("SMS sent successfully: %s" % message.sid)
-    except Exception as e:
-        _logger.error("SMS sent failed" + str(e))
-        _logger.error("SMS sent failed")
-
-    
+        r = requests.get(f'https://{ADMIN_USERNAME}:{ADMIN_PASSWORD}@smsgw3.gsm.co.za/xml/send/?number={to}&message={body}')
+        r.raise_for_status()
+        _logger.error("SMS sent status" + str(r))
+        _logger.error("SMS sent " + str(r.content))
+    except Exception as err:
+        _logger.error("SMS sent failed" + str(err))
