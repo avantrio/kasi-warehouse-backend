@@ -78,7 +78,13 @@ class AuthController(Controller):
 
     @route('/api/otp/', type='json', auth="public", methods=['POST','OPTIONS'], cors=cors)
     def send_token(self, mobile,*args, **kwargs):
-        try: 
+        try:
+            try:
+                if mobile[:3] == '+27':
+                    mobile = mobile[:3] + mobile[4:] if mobile[3] == '0' else mobile
+            except:
+                pass
+            _logger.info("Mobile number: %s" % mobile)
             if not verify_mobile_number(mobile):
                 raise UserError(_("Mobile number is wrong; please retry."))
             token = self._generate_token(4)
