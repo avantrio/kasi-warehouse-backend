@@ -8,7 +8,7 @@ from odoo.addons.auth_signup.models.res_users import SignupError
 from odoo.addons.auth_signup.models.res_partner import now
 from odoo.exceptions import UserError
 from odoo.addons.web.controllers.main import ensure_db, Home
-from .services import validate_request, verify_mobile_number,send_sms
+from .services import validate_request, verify_mobile_number,send_sms,sa_number_validation
 
 from base64 import b32encode
 from random import randint
@@ -25,6 +25,7 @@ class AuthController(Controller):
     @route('/api/session/authenticate/', type='json', auth="none", methods=['POST','OPTIONS'], cors=cors)
     def authenticate(self, login, password, base_location=None):
         try:
+            login = sa_number_validation(login)
             db = request.env.cr.dbname
             request.session.authenticate(db, login, password)
             session_info = request.env['ir.http'].session_info()
@@ -50,6 +51,7 @@ class AuthController(Controller):
     @route('/api/register/', type='json', auth="public", methods=['POST','OPTIONS'], cors=cors, website=True, sitemap=False)
     def register(self, *args, **kwargs):
         qcontext = self.get_auth_signup_qcontext()
+        qcontext['login'] = sa_number_validation(qcontext['login'])
         if 'error' not in qcontext and request.httprequest.method == 'POST':
             try:
                 self.do_signup(qcontext)
@@ -79,11 +81,7 @@ class AuthController(Controller):
     @route('/api/otp/', type='json', auth="public", methods=['POST','OPTIONS'], cors=cors)
     def send_token(self, mobile,*args, **kwargs):
         try:
-            try:
-                if mobile[:3] == '+27':
-                    mobile = mobile[:3] + mobile[4:] if mobile[3] == '0' else mobile
-            except:
-                pass
+            mobile = sa_number_validation(mobile)
             _logger.info("Mobile number: %s" % mobile)
             if not verify_mobile_number(mobile):
                 raise UserError(_("Mobile number is wrong; please retry."))
@@ -103,6 +101,7 @@ class AuthController(Controller):
     @route('/api/otp/', type='json', auth="public", methods=['PUT','OPTIONS'], cors=cors)
     def verify_token(self,mobile,token,*args, **kwargs):
         try:
+            mobile = sa_number_validation(mobile)
             verification_obj = request.env['mobile.verification'].sudo().search([('mobile_number', '=', mobile),('created_date','!=', False)],order='created_date desc', limit=1)
             if token=="0000" or token==verification_obj.token:
                 if self._is_token_expired(verification_obj.created_date):
@@ -124,6 +123,7 @@ class AuthController(Controller):
     @route('/api/reset_password/', type='json', auth='public', methods=['POST','OPTIONS'], cors=cors)
     def web_auth_reset_password(self, *args, **kwargs):
         qcontext = self.get_auth_signup_qcontext()
+        qcontext['login'] = sa_number_validation(qcontext['login'])
 
         if not qcontext.get('reset_password_enabled'):
             raise werkzeug.exceptions.NotFound()
@@ -225,7 +225,6 @@ class AuthController(Controller):
             "company": {},
             "partner": {}
         }
-
         for key in qcontext.keys():
             if key in ('company_name', 'business_type', 'company_registry', 'vat'):
                 if key=='company_name':
