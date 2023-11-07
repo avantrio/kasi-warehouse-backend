@@ -48,3 +48,11 @@ def send_sms(to,body):
         _logger.error("SMS sent " + str(r.content))
     except Exception as err:
         _logger.error("SMS sent failed" + str(err))
+
+def sa_number_validation(mobile):
+    try:
+        if mobile[:3] == '+27':
+            mobile = mobile[:3] + mobile[4:] if mobile[3] == '0' else mobile
+    except:
+        pass
+    return mobile
