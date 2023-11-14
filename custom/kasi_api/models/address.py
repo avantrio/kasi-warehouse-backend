@@ -5,6 +5,14 @@ from odoo import models, fields
 class Address(models.Model):
     _inherit=["res.partner"]
 
+    Types = [
+        ('BC', 'Beauty & Cosmetic store'),
+        ('SL', 'Salon'),
+        ('SP', 'Spazarette'),
+        ('MW', 'Midi Wholesale'),
+        ('MP', 'Market Place'),
+    ]
+
     Townships = [
         ('TB-NJ', 'Tembisa - North Joburg'),
         ('KT-SD', 'Kathorus - Sedibeng'),
@@ -32,3 +40,6 @@ class Address(models.Model):
     township = fields.Selection(Townships, string='Township', required=False)
     landmark = fields.Char(string='Landmark', required=False)
     province = fields.Char(string='Province', required=False)
+    business_registration_number = fields.Char(string='Business Registration Number', required=False)
+    business_type = fields.Selection(Types, string='Business Type', required=False)
+    
