@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <record id="view_partner_inherit_form_hc" model="ir.ui.view">
+      <field name="name">view_partner_inherit_form_hc</field>
+      <field name="model">res.partner</field>
+      <field name="inherit_id" ref="base.view_partner_form" />
+      <field name="arch" type="xml">
+        <xpath expr="//field[@name='category_id']" position="after">
+          <field name="code" />
+          <field name="partner_longitude" />
+          <field name="partner_latitude" />
+
+        </xpath>
+        <xpath expr="//field[@name='vat']" position="before">
+          <field name="township" />
+          <field name="landmark" />
+          <field name="province" />
+          <field name="business_type" />
+          <field name="business_registration_number" />
+
+
+        </xpath>
+      </field>
+    </record>
+  </data>
+</odoo>

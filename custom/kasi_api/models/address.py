@@ -42,4 +42,5 @@ class Address(models.Model):
     province = fields.Char(string='Province', required=False)
     business_registration_number = fields.Char(string='Business Registration Number', required=False)
     business_type = fields.Selection(Types, string='Business Type', required=False)
+    code = fields.Char(string='Customer Code', required=False)
     

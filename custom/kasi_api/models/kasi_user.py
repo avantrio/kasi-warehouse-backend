@@ -1,6 +1,6 @@
-from odoo import models, fields
+# from odoo import models, fields
 
-class KasiUser(models.Model):
-    _inherit="res.users"
+# class KasiUser(models.Model):
+#     _inherit="res.users"
 
-    business_id = fields.Integer(string='Business Id', required=False)
+#     business_id = fields.Integer(string='Business Id', required=False)

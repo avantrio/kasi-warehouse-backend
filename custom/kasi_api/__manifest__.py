@@ -12,5 +12,6 @@
     "data":[
         'security/ir.model.access.csv',
         'views/kasi_deals.xml',
+        'views/res_partner.xml',
     ]
 }

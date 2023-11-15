@@ -131,7 +131,7 @@ class ProfileController(Controller):
         for key in qcontext.keys():
             if key in ('business_type', 'company_registry', 'vat'):
                 if key=='company_registry':
-                    values['company']['business_registration_number'] = qcontext.get(key)
+                    values['partner']['business_registration_number'] = qcontext.get(key)
                 else:
                     values['partner'][key] = qcontext.get(key)
             elif key in ('email'):
