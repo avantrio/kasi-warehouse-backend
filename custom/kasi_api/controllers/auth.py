@@ -262,12 +262,9 @@ class AuthController(Controller):
 
     def _signup_with_values(self, token, values):
         db = request.env.cr.dbname
-        company = request.env['res.company'].sudo().create(values['company'])
         user = request.env['res.users'].sudo().create(values['user'])
-        user.write({
-            'business_id': company.id
-        })
-        company.partner_id.write(values['partner'])
+        partner = request.env['res.partner'].sudo().search_read([('mobile', '=', user.login)],fields=['id','township'])
+        self._update_partner_object(values,user.login,partner)
 
         request.env.cr.commit()     # as authenticate will use its own cursor we need to commit the current transaction
         uid = request.session.authenticate(db, values['user']['login'], values['user']['password'])
@@ -292,3 +289,17 @@ class AuthController(Controller):
            return False
         else:
             return True
+        
+    def _update_partner_object(self,values,login,partner):
+        user = request.env['res.users'].sudo().search_read([('login', '=', login)],fields=['id'])
+        values['partner']['vat'] = values['company']['vat']
+        values['partner']['company_name'] = values['company']['name']
+        values['partner']['business_registration_number'] = values['company']['company_registry']
+        values['partner']['business_type'] = values['company']['business_type']
+        values['partner']['user_id'] = user[0].get('id')
+        values['partner']['code'] = self._generate_customer_code(values['partner']['township'],values['company']['business_type'],user[0].get('id'))
+        request.env['res.partner'].sudo().search([('id','=',partner[0].get('id'))]).update(values['partner'])
+
+    def _generate_customer_code(self,township,business_type,user_id):
+        code = str(business_type) + str(township) + '0' + str(user_id)
+        return code

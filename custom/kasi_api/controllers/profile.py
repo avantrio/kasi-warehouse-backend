@@ -20,7 +20,11 @@ class ProfileController(Controller):
         validate_request(kwargs)
         session_info = request.env['ir.http'].session_info()
         user = request.env['res.users'].sudo().search_read([('id', '=', session_info['uid'])])
-        response = {'status':200,'response': user,'message':"success"}
+        partner = request.env['res.partner'].sudo().search_read([('id', '=', user[0].get('partner_id')[0])])
+        profile_dict = user[0]
+        profile_dict['address'] = self._get_partner_address(partner[0])
+        profile_dict['location'] = self._get_partner_location(partner[0])
+        response = {'status':200,'response': profile_dict,'message':"success"}
         return response
 
     @route('/api/profile/me/',auth='user',type='json',methods=['PUT','OPTIONS'],cors=cors)
@@ -126,7 +130,10 @@ class ProfileController(Controller):
 
         for key in qcontext.keys():
             if key in ('business_type', 'company_registry', 'vat'):
-                values['company'][key] = qcontext.get(key)
+                if key=='company_registry':
+                    values['partner']['business_registration_number'] = qcontext.get(key)
+                else:
+                    values['partner'][key] = qcontext.get(key)
             elif key in ('email'):
                 values['user'][key] = qcontext.get(key)
             elif key in ('address', 'location'):
@@ -170,10 +177,8 @@ class ProfileController(Controller):
     def _update_profile(self, values):
         session_info = request.env['ir.http'].session_info()
         user = request.env['res.users'].sudo().search([('id', '=', session_info['uid'])])
-        company = request.env['res.company'].sudo().search([('id', '=', user.business_id)])
-        partner = company.partner_id
+        partner = request.env['res.partner'].sudo().search([('user_id', '=', session_info['uid'])])
         self._update_obj(values['user'], user)
-        self._update_obj(values['company'], company)
         self._update_obj(values['partner'], partner)
         return user
 
@@ -187,5 +192,22 @@ class ProfileController(Controller):
             raise SignupError(_('Authentication Failed.'))
         return uid
 
+    def _get_partner_address(self, partner):
+        address = {
+            "street": partner.get('street',None),
+            "city": partner.get('city',None), 
+            "province": partner.get('province',None),
+            "zip": partner.get('zip',None),
+            "landmark": partner.get('landmark',None),
+            "township": partner.get('township',None)
+        }
+        print(partner.get('street',None))
+        return address
     
-        
+    def _get_partner_location(self, partner):
+        location = {
+            "lat": partner.get('partner_latitude',None),
+            "long": partner.get('partner_longitude',None)
+        }
+        return location
+    
