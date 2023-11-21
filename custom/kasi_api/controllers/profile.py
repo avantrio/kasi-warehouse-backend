@@ -7,6 +7,7 @@ from odoo import _
 from odoo.addons.auth_signup.models.res_users import SignupError
 from odoo.exceptions import UserError
 from odoo.addons.web.controllers.main import ensure_db
+from odoo.addons.kasi_api.models.address import Address
 
 _logger = logging.getLogger(__name__)
 
@@ -38,6 +39,11 @@ class ProfileController(Controller):
             except Exception as e:
                 _logger.error("%s", e)
                 qcontext['error'] = _(e)
+                if 'business_type' in qcontext and qcontext['business_type'] not in Address.Types:
+                    qcontext['error'] = 'Incorrect business type entered. Please try again'
+                if 'address' in qcontext and 'township' in qcontext['address'] and qcontext['address']['township'] not in Address.Townships:
+                    qcontext['error'] = 'Incorrect township entered. Please try again'
+
                 request.env.cr.rollback()
         
         if 'error' not in qcontext:
@@ -63,6 +69,8 @@ class ProfileController(Controller):
                 self._auth_user(db, values['login'], values['password'])
             except UserError as e:
                 qcontext['error'] = e.args[0]
+                if request.env["res.users"].sudo().search([("login", "=", qcontext.get("login"))]):
+                    qcontext["error"] = _("Another user is already registered using this mobile number.")
                 request.env.cr.rollback()
             except (SignupError, AssertionError) as e:
                 if request.env["res.users"].sudo().search([("login", "=", qcontext.get("login"))]):
@@ -74,6 +82,8 @@ class ProfileController(Controller):
             except Exception as e:
                 _logger.error("%s", e)
                 qcontext['error'] = _(e)
+                if request.env["res.users"].sudo().search([("login", "=", qcontext.get("login"))]):
+                    qcontext["error"] = _("Another user is already registered using this mobile number.")
                 request.env.cr.rollback()
         
 
@@ -201,7 +211,6 @@ class ProfileController(Controller):
             "landmark": partner.get('landmark',None),
             "township": partner.get('township',None)
         }
-        print(partner.get('street',None))
         return address
     
     def _get_partner_location(self, partner):
