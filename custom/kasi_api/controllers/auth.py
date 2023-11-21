@@ -13,7 +13,7 @@ from .services import validate_request, verify_mobile_number,send_sms,sa_number_
 from base64 import b32encode
 from random import randint
 from datetime import timedelta, datetime
-
+from odoo.addons.kasi_api.models.address import Address
 
 _logger = logging.getLogger(__name__)
 
@@ -58,6 +58,8 @@ class AuthController(Controller):
 
             except UserError as e:
                 qcontext['error'] = e.args[0]
+                if request.env["res.users"].sudo().search([("login", "=", qcontext.get("login"))]):
+                    qcontext["error"] = _("Another user is already registered using this mobile number.")
                 request.env.cr.rollback()
             except (SignupError, AssertionError) as e:
                 if request.env["res.users"].sudo().search([("login", "=", qcontext.get("login"))]):
@@ -69,6 +71,12 @@ class AuthController(Controller):
             except Exception as e:
                 _logger.error("%s", e)
                 qcontext['error'] = _(e)
+                if request.env["res.users"].sudo().search([("login", "=", qcontext.get("login"))]):
+                    qcontext["error"] = _("Another user is already registered using this mobile number.")
+                if qcontext['business_type'] not in Address.Types:
+                    qcontext['error'] = 'Incorrect business type entered. Please try again'
+                if qcontext['address']['township'] not in Address.Townships:
+                    qcontext['error'] = 'Incorrect township entered. Please try again'
                 request.env.cr.rollback()
         
 
@@ -113,7 +121,7 @@ class AuthController(Controller):
                     msg = "Token Verified"
             else:
                 is_verified=False
-                msg = "Token Invalid"
+                msg = "Incorrect OTP entered. Please try again."
             response = {'status':200,'response':{"is_verified": is_verified, "message": msg},'message':"success"}
         except Exception as e:
             _logger.error("%s", e)

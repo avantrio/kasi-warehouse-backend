@@ -10,7 +10,6 @@
           <field name="code" />
           <field name="partner_longitude" />
           <field name="partner_latitude" />
-
         </xpath>
         <xpath expr="//field[@name='vat']" position="before">
           <field name="township" />
@@ -18,9 +17,19 @@
           <field name="province" />
           <field name="business_type" />
           <field name="business_registration_number" />
-
-
         </xpath>
+
+        <xpath expr="//field[@name='function']" position="before">
+          <field name="name" />
+        </xpath>
+
+        <field name="name" position="replace">
+          <field name="commercial_company_name"/>
+        </field>
+        <field name="name" position="attributes">
+          <attribute name="invisible">1</attribute>
+        </field>
+
       </field>
     </record>
   </data>
