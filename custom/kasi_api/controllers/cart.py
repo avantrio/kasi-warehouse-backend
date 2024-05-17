@@ -30,6 +30,7 @@ class CartController(http.Controller):
                         for order_line in order_lines:                            
                             order_line['product_image_128'] = self.get_product_image_128(order_line)
                         abandoned_order[0]['order_lines'] = order_lines
+                        abandoned_order[0]['amount_delivery'] = 100
                         response = {'status':200,'response':abandoned_order,'message':"success"}
                         return {'status':200,'response':abandoned_order,'message':"success"}
                     else:
@@ -43,6 +44,7 @@ class CartController(http.Controller):
                 if abandoned_order:
                     order_lines = http.request.env['sale.order.line'].sudo().search_read([('id','in',abandoned_order[0].get('website_order_line'))])
                     abandoned_order[0]['order_lines'] = order_lines
+                    abandoned_order[0]['amount_delivery'] = 100
                     for order_line in order_lines:
                         order_line['product_image_128'] = self.get_product_image_128(order_line)
                     response = {'status':200,'response':abandoned_order,'message':"success"}
