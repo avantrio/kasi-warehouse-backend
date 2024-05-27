@@ -133,20 +133,23 @@ class OrderController(http.Controller):
         public_order = kwargs.get('public_order')
 
         if public_order and kwargs.get('method') == 'PUT':
-            order_to_be_canceled = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('state','=','sent'),('user_id','=',user_id)],fields=['user_id','date_order'])
+            order_to_be_canceled = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('state','in',['sent', 'cancel']),('user_id','=',user_id)],fields=['user_id','date_order', 'state'])
             if order_to_be_canceled:
-                time = order_to_be_canceled[0]['date_order']
-                one_hour_later = time + timedelta(hours=2)
-
-                if datetime.now() < one_hour_later:
-                    http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','sent')]).sudo().action_cancel()
-                    response = {'status':200,'response':"Order canceled",'message':"success"}
+                if(order_to_be_canceled[0]['state'] == 'cancel'):
+                    response = {'status':200,'response':"Order cancelled",'message':"Your order has been cancelled already."}
                 else:
-                    response = {'status':200,'response':"Order cancellation time exceeded",'message':"success"}
+                    time = order_to_be_canceled[0]['date_order']
+                    two_hours_later = time + timedelta(hours=2)
+
+                    if datetime.now() < two_hours_later:
+                        http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','sent')]).sudo().action_cancel()
+                        response = {'status':200,'response':"Order cancelled",'message':"Your order was cancelled successfully."}
+                    else:
+                        response = {'status':200,'response':"Order cancellation time exceeded",'message':"You can only cancel an order up to 2 hours from the order placement time."}
             else:
-                response = {'status':200,'response':"Nothing to Cancel",'message':"success"}
+                response = {'status':200,'response':"Invalid order",'message':"Please check the order id."}
         else:
-            response = {'status':400,'response':"Invalid order",'message':"success"}
+            response = {'status':400,'response':"Invalid order",'message':"Please check the order id."}
 
         return response
 
