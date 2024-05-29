@@ -5,6 +5,8 @@ import uuid
 from .services import paginate
 import math
 
+delivery_amount = 100
+
 class OrderController(http.Controller):
 
     cors = "*"
@@ -40,6 +42,9 @@ class OrderController(http.Controller):
                 page_size = orders_total
 
             orders = http.request.env['sale.order'].sudo().search_read(filter_set,order="id desc",offset=offset,limit=page_size)
+            for order in orders:
+                order['amount_delivery'] = delivery_amount
+                order['amount_total'] += delivery_amount
     
             response['status'] = 200
             response['response'] = orders
@@ -82,6 +87,8 @@ class OrderController(http.Controller):
         orders = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('user_id','=',user_id)])
         order_lines = http.request.env['sale.order.line'].sudo().search_read([('id','in',orders[0].get('website_order_line'))])
         orders[0]['order_lines'] = order_lines
+        orders[0]['amount_delivery'] = delivery_amount
+        orders[0]['amount_total'] += delivery_amount
         if not orders:
             raise NotFound('Not found')
         else:
