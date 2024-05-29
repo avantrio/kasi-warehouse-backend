@@ -4,6 +4,7 @@ from werkzeug.exceptions import NotFound
 import uuid
 from .services import paginate
 import math
+from datetime import datetime,timedelta
 
 class OrderController(http.Controller):
 
@@ -80,8 +81,14 @@ class OrderController(http.Controller):
         validate_request(kwargs)
         user_id = http.request.uid
         orders = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('user_id','=',user_id)])
-        order_lines = http.request.env['sale.order.line'].sudo().search_read([('id','in',orders[0].get('website_order_line'))])
-        orders[0]['order_lines'] = order_lines
+
+        if orders[0]['state'] == 'cancel':
+            order_lines = http.request.env['sale.order.line'].sudo().search_read([('id','in',orders[0]['website_order_line'])])
+            orders[0]['order_lines'] = order_lines
+        else:
+            order_lines = http.request.env['sale.order.line'].sudo().search_read([('id','in',orders[0].get('website_order_line'))])
+            orders[0]['order_lines'] = order_lines
+
         if not orders:
             raise NotFound('Not found')
         else:
@@ -119,7 +126,33 @@ class OrderController(http.Controller):
             respose = {'status':400,'response':"Invalid order",'message':"success"}
 
         return respose
-        
+
+    @http.route('/api/orders/<int:order_id>/cancel',auth='user',type='json',methods=['PUT','OPTIONS'],cors=cors)
+    def cancel_order(self, order_id,**kwargs):
+        user_id = http.request.uid
+        public_order = kwargs.get('public_order')
+
+        if public_order and kwargs.get('method') == 'PUT':
+            order_to_be_canceled = http.request.env['sale.order'].sudo().search_read([('id','=',order_id),('state','in',['sent', 'cancel']),('user_id','=',user_id)],fields=['user_id','date_order', 'state'])
+            if order_to_be_canceled:
+                if(order_to_be_canceled[0]['state'] == 'cancel'):
+                    response = {'status':200,'response':"Order cancelled",'message':"Your order has been cancelled already."}
+                else:
+                    time = order_to_be_canceled[0]['date_order']
+                    two_hours_later = time + timedelta(hours=2)
+
+                    if datetime.now() < two_hours_later:
+                        http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','sent')]).sudo().action_cancel()
+                        response = {'status':200,'response':"Order cancelled",'message':"Your order was cancelled successfully."}
+                    else:
+                        response = {'status':200,'response':"Order cancellation time exceeded",'message':"You can only cancel an order up to 2 hours from the order placement time."}
+            else:
+                response = {'status':200,'response':"Invalid order",'message':"Please check the order id."}
+        else:
+            response = {'status':400,'response':"Invalid order",'message':"Please check the order id."}
+
+        return response
+
     @http.route('/api/orders/<int:order_id>/promotions',auth='user',type='json',methods=['POST','OPTIONS'],cors=cors)
     def apply_promo_code(self,order_id, **kwargs):
         user_id = http.request.uid

@@ -9,7 +9,7 @@ class ProductTemplateController(http.Controller):
     template_fields = ['price','active','is_product_variant','standard_price','pricelist_item_count',
               'image_128','__last_update','display_name','create_uid','create_date','write_date','qty_available','virtual_available','incoming_qty','outgoing_qty','base_unit_price',
               'is_published','name','description','type','detailed_type','categ_id','currency_id','list_price','product_variant_ids','product_variant_id','product_variant_count','alternative_product_ids',
-              'product_template_image_ids','public_categ_ids','brand_id']
+              'product_template_image_ids','public_categ_ids']
     
     product_fields = ['price','price_extra','lst_price','partner_ref','active','product_tmpl_id','product_template_attribute_value_ids','is_product_variant','standard_price','pricelist_item_count',
               'image_128','__last_update','display_name','create_uid','create_date','write_date','qty_available','virtual_available','free_qty','incoming_qty','outgoing_qty','base_unit_price',
@@ -35,8 +35,8 @@ class ProductTemplateController(http.Controller):
             filter_set.append(('list_price','<=',kwargs.get('list_price_lte')))
         if 'search' in kwargs:
             filter_set.append(('name','ilike',kwargs.get('search')))
-        if 'brand_ids' in kwargs:
-            filter_set.append(('brand_id','in',kwargs.get('brand_ids')))
+        # if 'brand_ids' in kwargs:
+        #     filter_set.append(('brand_id','in',kwargs.get('brand_ids')))
 
         filter_set.append(('is_published','=',True))
 
