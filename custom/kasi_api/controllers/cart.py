@@ -145,11 +145,20 @@ class CartController(http.Controller):
         for product in products:
             existing_product_uom_qty = self.adding_existing_product_to_cart(order_id,product)
             if 'pricelist_id' not in product:
-                vals = {
-
+                if (product.get('quantity')):
+                    vals = {
+                            'order_id':order_id,
+                            "product_uom_qty":product.get('quantity') + existing_product_uom_qty,
+                            "product_id":product.get('id')
+                        }
+                elif(product.get('packaging_id')):
+                    product_packaging = http.request.env['product.packaging'].sudo().search_read([('id', '=', product.get('packaging_id'))],order="id asc",fields = ['qty'])
+                    vals = {
                         'order_id':order_id,
-                        "product_uom_qty":product.get('quantity') + existing_product_uom_qty,
-                        "product_id":product.get('id')
+                        'product_packaging_id':product.get('packaging_id'),
+                        "product_packaging_qty":product.get('packaging_qty'),
+                        "product_id":product.get('id'),
+                        "product_uom_qty":product_packaging[0].get('qty') * product.get('packaging_qty'),
                     }
                 http.request.env['sale.order.line'].sudo().create(vals)
             else:
@@ -159,10 +168,19 @@ class CartController(http.Controller):
     def is_available_quantity(self,products):
         for product in products:
             product_data = http.request.env['product.product'].sudo().search_read([('id','=',product.get('id'))],fields=['free_qty'])
-            if product_data[0].get('free_qty') < product.get('quantity'):
-                return False
+            
+            if (product.get('quantity')):
+                if product_data[0].get('free_qty') < product.get('quantity'):
+                    return False
+                else:
+                    return True
             else:
-                return True
+                product_packaging = http.request.env['product.packaging'].sudo().search_read([('id', '=', product.get('packaging_id'))],order="id asc",fields = ['qty'])
+
+                if product_data[0].get('free_qty') < product_packaging[0].get('qty') * product.get('packaging_qty'):
+                    return False
+                else:
+                    return True
 
 
     def add_order_lines_with_discounts(self,product,order_id,existing_product_uom_qty):
