@@ -84,6 +84,8 @@ class ProductTemplateController(http.Controller):
         for product in products:
             product_template_attribute_values = http.request.env['product.template.attribute.value'].sudo().search_read([('id', 'in', product.get('product_template_attribute_value_ids'))],
                                                                                                                         fields = ['name','html_color','display_type','display_name'])
+            product_packaging = http.request.env['product.packaging'].sudo().search_read([('product_id', '=', product['id'])],order="id asc",fields = ['id','name','qty'])
+            product['pack_types'] = product_packaging
             product['product_attribute_values'] = product_template_attribute_values
 
             pricelist_items =  http.request.env['product.pricelist.item'].sudo().search_read([('product_id','=',product.get('id'))])
