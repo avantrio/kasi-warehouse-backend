@@ -100,7 +100,12 @@ class CartController(http.Controller):
             else:
                 abandoned_order = http.request.env['sale.order'].sudo().search_read([('user_id','=',user_id),('state','=','draft')])
             
-            vals = {'product_uom_qty':kwargs.get('quantity')}
+            if kwargs.get('quantity'):
+                vals = {'product_uom_qty':kwargs.get('quantity')}
+            elif kwargs.get('product_packaging_qty'):
+                product_packaging = http.request.env['product.packaging'].sudo().search_read([('id', '=', kwargs.get('packaging_id'))],order="id asc",fields = ['qty'])
+                vals = {'product_packaging_qty':kwargs.get('product_packaging_qty'),'product_uom_qty':product_packaging[0].get('qty')*kwargs.get('product_packaging_qty')}
+
             if not abandoned_order:
                 response = {'status':200,'response':"Nothing to update",'message':"success"}
                 return response
@@ -156,9 +161,9 @@ class CartController(http.Controller):
                     vals = {
                         'order_id':order_id,
                         'product_packaging_id':product.get('packaging_id'),
-                        "product_packaging_qty":product.get('packaging_qty'),
+                        "product_packaging_qty":product.get('packaging_qty') + (existing_product_uom_qty/product_packaging[0].get('qty')) ,
                         "product_id":product.get('id'),
-                        "product_uom_qty":product_packaging[0].get('qty') * product.get('packaging_qty'),
+                        "product_uom_qty":(product_packaging[0].get('qty') * product.get('packaging_qty')) + existing_product_uom_qty,
                     }
                 http.request.env['sale.order.line'].sudo().create(vals)
             else:
@@ -227,10 +232,17 @@ class CartController(http.Controller):
     
     def adding_existing_product_to_cart(self,order_id,product):
         existing_product_uom_qty = 0
-        order_lines = http.request.env['sale.order.line'].sudo().search_read([('order_id','=',order_id),('product_id','=',product.get('id'))],fields=['product_uom_qty'])
-        if order_lines:
-            order_line_ids = [order_line.get('id') for order_line in order_lines]
-            existing_product_uom_qty = order_lines[0].get('product_uom_qty')
-            http.request.env['sale.order.line'].sudo().search([('id','in',order_line_ids),('order_id','=',order_id)]).unlink()
+        if(product.get('packaging_id')):
+            order_lines = http.request.env['sale.order.line'].sudo().search_read([('order_id','=',order_id),('product_id','=',product.get('id')),('product_packaging_id','=',product.get('packaging_id'))],fields=['product_uom_qty'])
+            if order_lines:
+                order_line_ids = [order_line.get('id') for order_line in order_lines]
+                existing_product_uom_qty = order_lines[0].get('product_uom_qty')
+                http.request.env['sale.order.line'].sudo().search([('id','in',order_line_ids),('order_id','=',order_id)]).unlink()
+        else:
+            order_lines = http.request.env['sale.order.line'].sudo().search_read([('order_id','=',order_id),('product_id','=',product.get('id'))],fields=['product_uom_qty'])
+            if order_lines:
+                order_line_ids = [order_line.get('id') for order_line in order_lines]
+                existing_product_uom_qty = order_lines[0].get('product_uom_qty')
+                http.request.env['sale.order.line'].sudo().search([('id','in',order_line_ids),('order_id','=',order_id)]).unlink()
 
         return existing_product_uom_qty

@@ -147,9 +147,9 @@ class OrderController(http.Controller):
                     response = {'status':200,'response':"Order cancelled",'message':"Your order has been cancelled already."}
                 else:
                     time = order_to_be_canceled[0]['date_order']
-                    two_hours_later = time + timedelta(hours=2)
+                    one_hour_later = time + timedelta(hours=1)
 
-                    if datetime.now() < two_hours_later:
+                    if datetime.now() < one_hour_later:
                         http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','sent')]).sudo().action_cancel()
                         response = {'status':200,'response':"Order cancelled",'message':"Your order was cancelled successfully."}
                     else:
