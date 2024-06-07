@@ -206,7 +206,7 @@ class OrderController(http.Controller):
         if not order:
             return {'status':400,'response':"Invalid order",'message':"success"}
         else:
-            order_lines = http.request.env['sale.order.line'].sudo().search_read([('order_id','=',order[0].get('id'))],fields=['product_uom_qty','product_id','is_reward_line'])
+            order_lines = http.request.env['sale.order.line'].sudo().search_read([('order_id','=',order[0].get('id'))],fields=['product_uom_qty','product_id','is_reward_line','product_packaging_id','product_packaging_qty'])
             abandoned_order = http.request.env['sale.order'].sudo().search_read([('user_id','=',user_id),('state','=','draft'),('partner_id','=',partner_id)])
 
             if abandoned_order:
@@ -215,11 +215,20 @@ class OrderController(http.Controller):
                 #assigning new products to cart order
                 for order_line in order_lines:
                     if not order_line.get('is_reward_line'):
-                        vals = {
-                            'order_id':abandoned_order[0].get('id'),
-                            "product_uom_qty":order_line.get('product_uom_qty'),
-                            "product_id":order_line.get('product_id')[0]
-                        }
+                        if (order_line.get('product_packaging_id')):
+                            vals = {
+                                'order_id':abandoned_order[0].get('id'),
+                                'product_packaging_id':order_line.get('product_packaging_id')[0],
+                                "product_packaging_qty":int(order_line.get('product_packaging_qty')),
+                                "product_id":order_line.get('product_id')[0],
+                                "product_uom_qty":int(order_line.get('product_uom_qty')),
+                            }
+                        else:
+                            vals = {
+                                'order_id':abandoned_order[0].get('id'),
+                                "product_uom_qty":order_line.get('product_uom_qty'),
+                                "product_id":order_line.get('product_id')[0]
+                            }
                         http.request.env['sale.order.line'].sudo().create(vals)
 
                 return {'status':200,'response':"Existing cart is cleared and reorder products added to cart",'message':"success"}
@@ -229,11 +238,20 @@ class OrderController(http.Controller):
                 order = http.request.env['sale.order'].sudo().create(vals)
                 for order_line in order_lines:
                     if not order_line.get('is_reward_line'):
-                        vals = {
-                            'order_id':order.id,
-                            "product_uom_qty":order_line.get('product_uom_qty'),
-                            "product_id":order_line.get('product_id')[0]
-                        }
+                        if (order_line.get('product_packaging_id')):
+                            vals = {
+                                'order_id':order_id,
+                                'product_packaging_id':order_line.get('product_packaging_id')[0],
+                                "product_packaging_qty":int(order_line.get('product_packaging_qty')),
+                                "product_id":order_line.get('product_id')[0],
+                                "product_uom_qty":int(order_line.get('product_uom_qty')),
+                            }
+                        else:
+                            vals = {
+                                'order_id':order.id,
+                                "product_uom_qty":int(order_line.get('product_uom_qty')),
+                                "product_id":order_line.get('product_id')[0]
+                            }
                         http.request.env['sale.order.line'].sudo().create(vals)
             
                 return {'status':200,'response':"Reorder products added to cart",'message':"success"}
