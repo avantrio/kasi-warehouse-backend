@@ -153,7 +153,7 @@ class OrderController(http.Controller):
                         http.request.env['sale.order'].sudo().search([('id','=',order_id),('state','=','sent')]).sudo().action_cancel()
                         response = {'status':200,'response':"Order cancelled",'message':"Your order was cancelled successfully."}
                     else:
-                        response = {'status':200,'response':"Order cancellation time exceeded",'message':"You can only cancel an order up to 2 hours from the order placement time."}
+                        response = {'status':200,'response':"Order cancellation time exceeded",'message':"You can only cancel an order up to 1 hour from the order placement time."}
             else:
                 response = {'status':200,'response':"Invalid order",'message':"Please check the order id."}
         else:
@@ -210,6 +210,7 @@ class OrderController(http.Controller):
             abandoned_order = http.request.env['sale.order'].sudo().search_read([('user_id','=',user_id),('state','=','draft'),('partner_id','=',partner_id)])
 
             if abandoned_order:
+                vals = {}
                 # removing existing cart order items
                 http.request.env['sale.order.line'].sudo().search([('order_id','=',abandoned_order[0].get('id'))]).unlink()
                 #assigning new products to cart order
@@ -221,7 +222,7 @@ class OrderController(http.Controller):
                                 'product_packaging_id':order_line.get('product_packaging_id')[0],
                                 "product_packaging_qty":int(order_line.get('product_packaging_qty')),
                                 "product_id":order_line.get('product_id')[0],
-                                "product_uom_qty":int(order_line.get('product_uom_qty')),
+                                "product_uom_qty":order_line.get('product_uom_qty'),
                             }
                         else:
                             vals = {
@@ -240,16 +241,16 @@ class OrderController(http.Controller):
                     if not order_line.get('is_reward_line'):
                         if (order_line.get('product_packaging_id')):
                             vals = {
-                                'order_id':order_id,
+                                'order_id':order.id,
                                 'product_packaging_id':order_line.get('product_packaging_id')[0],
                                 "product_packaging_qty":int(order_line.get('product_packaging_qty')),
                                 "product_id":order_line.get('product_id')[0],
-                                "product_uom_qty":int(order_line.get('product_uom_qty')),
+                                "product_uom_qty":order_line.get('product_uom_qty')
                             }
                         else:
                             vals = {
                                 'order_id':order.id,
-                                "product_uom_qty":int(order_line.get('product_uom_qty')),
+                                "product_uom_qty":order_line.get('product_uom_qty'),
                                 "product_id":order_line.get('product_id')[0]
                             }
                         http.request.env['sale.order.line'].sudo().create(vals)

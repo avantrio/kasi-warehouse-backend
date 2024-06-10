@@ -1214,23 +1214,23 @@ class Response(werkzeug.wrappers.Response):
         self.uid = uid
 
         response = None
-        if self.response and self.response is not None and request.endpoint.routing['type'] == 'json':
+        if self.response and self.response is not None and request is not None and request.endpoint is not None and request.endpoint.routing is not None and request.endpoint.routing['type'] == 'json':
             response = json.loads(self.response[0].decode())
 
         # Support for Cross-Origin Resource Sharing
-        if request.endpoint and 'cors' in request.endpoint.routing:
+        if request.endpoint and request is not None and request.endpoint is not None and request.endpoint.routing is not None and 'cors' in request.endpoint.routing:
             cors = request.httprequest.headers['Origin'] if 'Origin' in request.httprequest.headers else request.endpoint.routing['cors']
             self.headers.set('Access-Control-Allow-Origin',cors)
             methods = 'GET, POST'
-            if request.endpoint.routing['type'] == 'json':
+            if request is not None and request.endpoint is not None and request.endpoint.routing is not None and request.endpoint.routing['type'] == 'json':
                 methods = 'POST, PUT, DELETE, PATCH, OPTIONS, GET'
-            elif request.endpoint.routing.get('methods'):
+            elif request is not None and request.endpoint is not None and request.endpoint.routing is not None and request.endpoint.routing.get('methods'):
                 methods = ', '.join(request.endpoint.routing['methods'])
             self.headers.set('Access-Control-Allow-Methods', methods)
             self.headers.set('Access-Control-Allow-Credentials', 'true')
 
         if response and 'error' in response and response["error"]["code"] == 100:
-            if request.endpoint and 'cors' in request.endpoint.routing:
+            if request.endpoint and request is not None and request.endpoint is not None and request.endpoint.routing is not None and 'cors' in request.endpoint.routing:
                 cors = request.httprequest.headers['Origin'] if 'Origin' in request.httprequest.headers else request.endpoint.routing['cors']
             else:
                 cors = request.httprequest.headers['Origin'] if 'Origin' in request.httprequest.headers else "*"
